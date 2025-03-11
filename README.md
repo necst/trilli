@@ -38,8 +38,8 @@ Following we describe three testing flows:
 ### Case 1. Using given bitstreams for Image Transformation or Image Registration Step
 1. Choose a bitstream in `bitstreams/only_TX` or `bitstreams/reg_step` and copy it into `hw/`
 2. Compile the host code: `make build_sw TASK=[TX|STEP][TX|STEP]`
-3. Pack the build into a single folder, ready for testing: `make pack [NAME=<name>]` (default name is `hw_build`)
-4. Move the generated folder, located under `build/NAME` (i.e. `cd build/hw_build`), on the deploy machine
+3. Pack the build into a single folder, ready for testing: `make pack [NAME=<name>]` (default name is `hw_build`). This command generates a folder NAME under build/. To use the given bitstream, it must be copied into this folder.
+4. Move the generated folder, `build/NAME` (i.e. `cd build/hw_build`), on the deploy machine
 5. Run: `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`
 
 ### Case 2. Preparing the bitstream for Image Transformation or Rigid Registration Step
@@ -71,7 +71,7 @@ cd <YourPath>/Trilli
 ```
 make build_and_pack TARGET=hw TASK=[TX|STEP] NAME=[NAME=<name>]
 ```
-5. Move the generated folder, located under `build/NAME` (i.e. `cd build/hw_build`), on the deploy machine
+5. Move the generated folder, `build/NAME` (i.e. `cd build/hw_build`), on the deploy machine
 
 6. Source XRT to interact with the device
 ```
@@ -120,7 +120,6 @@ make pack_app [NAME=<name>]
 ```
 ./exec.sh 
 ```
-
 
 ## Plotting Paper Figures
 To plot each result figure in the paper, please refer to the corresponding folder under **paper_fig/.**
