@@ -1,5 +1,4 @@
-# 📊 Figure 7 - Latency Improvement Analysis
-
+# 📊 Figure 7 - Execution Time Literature Comparison
 This folder contains the necessary files for plotting **Figure 7**. 
 
 > **Important:** Ensure that LaTeX fonts are enabled in Python to guarantee correct image rendering.

@@ -25,7 +25,8 @@ TRILLI is designed to address the computational challenges in both key component
 5. Run: `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`
 
 #### Plotting
-To plot the... ***TODO write instructions***
+To plot each result figure in the paper, please refer to the corresponding folder under **paper_fig/.**
+Each folder contains a subfolder with the figure name, and a dedicated readme for running. Per each figure, we provide some dedicated .csv files, containing sufficient numbers to replicate the paper result.
 
 ### Case 2. Complete image registration application 
 1. Choose a bitstream in `bitstreams/reg_step` and copy it into ??
