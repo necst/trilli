@@ -116,6 +116,7 @@ make build_app
 make pack_app [NAME=<name>]
 ```
 *Note 1:* That the commands prepare a folder copying dataset volumes from `3DIRG_application/CT_small/png` and `3DIRG_application/PET_small/png`. Therefore, images must be there before using this command. 
+
 5. Execute the application: 
 ```
 ./exec.sh 
