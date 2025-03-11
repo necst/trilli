@@ -29,14 +29,14 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - `default.cfg`: architecutre configuration parameters
 
 ## Artifact evaluation
-### Case 0. Using given bitstreams for Image Transformation or Image Registration Step
+### Case 1. Using given bitstreams for Image Transformation or Image Registration Step
 1. Choose a bitstream in `bitstreams/only_TX` or `bitstreams/reg_step` and copy it into `hw/`
 2. Compile the host code: `make build_sw TASK=[TX|STEP][TX|STEP]`
 3. Pack the build into a single folder, ready for testing: `make pack [NAME=<name>]` (default name is `hw_build`)
 4. Move into the generated folder under `build/` (i.e. `cd build/hw_build`)
 5. Run: `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`
 
-### Case 1. Preparing the bitstream for Image Transformation or Rigid Registration Step
+### Case 2. Preparing the bitstream for Image Transformation or Rigid Registration Step
 
 #### Option A. Automatic Flow
 0. Source Vitis & XRT
@@ -106,7 +106,7 @@ source <YOUR_PATH_TO_XRT>/setup.sh
 ./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]
 ```
 
-### Case 2. Complete image registration application 
+### Case 3. Complete image registration application 
 #### Option A. Using pre-generated bitstream
 
 1. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
