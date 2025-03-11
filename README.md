@@ -4,15 +4,27 @@ TRILLI is a novel Versal-based accelerator for **3D rigid image registration**.
 TRILLI is designed to address the computational challenges in both key components of the registration process, **geometric transformation with interpolation** and **similarity metric** computation, by optimally mapping computational steps to heterogeneous hardware components on the [Versal VCK5000](https://japan.xilinx.com/content/dam/xilinx/publications/product-briefs/amd-xilinx-vck5000-product-brief.pdf).
 
 ## System architecture
-***TODO upload architecture diagram***
+![System Architecture](./figures/architecture_diagram.png)
+
+*System Architecture Diagram: TRILLI integration with a CPU-based Powell optimizer for multi-modal 3D rigid image registration. Input images are used for an initial transformation and accelerated registration via TRILLI. The resulting MI is used by the Powell optimizer
+to iteratively refine transformation parameters based on user-defined settings. The final output is a registered floating volume.*
+
+## Requirements
+- Hardware Device: Versal VCK5000 XDMA2022.1
+- Vitis 2022.1 
+- XRT 2022.1
+- OpenCV 3.0.0 - static library
+- Python 3.8
 
 ## Code overview
 - `3DIRG_application/`: complete ragistration framework
 - `aie/`: AI Engines source code
 - `common/`: constants and configuration generator
 - `data_movers/`: PL kernels source code
+- `figures/`: figure for TRILLI's repository
 - `hw/`: system integration and output bitstream
-- `mutual_info/`: PL mutual information kernel source code
+- `mutual_info/`: PL mutual information kernel source code from **[Hephaestus](https://dl.acm.org/doi/10.1145/3607928)**
+- `soa/`: GPU 3D Image Registration from athena, with scripts for simplifying testing
 - `sw/`: host source code
 - `default.cfg`: architecutre configuration parameters
 
