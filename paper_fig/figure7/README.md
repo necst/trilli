@@ -9,18 +9,19 @@ image transformation and interpolation (a), its integration with MI (b), and the
 
 ## 🚀 How to Run the Script
 To execute the code, simply run:
-
 ```
 python3 figure7.py
 ```
+As default, this python runs looking for the files we provided, containing results for TRILLI registration step and full 3D image registration application.
 
 ## 🔄 Customizing the Plot with Your Data
 
-If you want to modify the plot using **your own generated data**, follow these steps:
+If you want to modify the plot using **your own generated data** for TRILLI, follow these steps:
 
 1. Refer to the chosen section in the **README** (located in the root folder). Follow the section to produce the bitstream and run new data.
-2. Rename your output file according to the target configuration.
-3. Replace it in the **CSV folder** to ensure proper processing.
+2. Run the following command
+```
+python3 figure7.py --trilli_tx <PATH_TO_RESULTS_FILE_FOR_RIGIDSTEP> --trilli_pow <PATH_TO_RESULTS_FILE_FOR_FULL3DAPP>
+```
 
-### 📂 File Naming Format:
-As the script looks for specific naming, please keep it when moving in the folder. Alternatively, you can update the script
+

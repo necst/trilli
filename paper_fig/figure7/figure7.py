@@ -28,6 +28,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import warnings
+import argparse
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 plt.rcdefaults()
 
@@ -47,6 +49,24 @@ plt.rcParams['axes.labelpad'] = 0
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
 scale_points=1.75
+
+# Set up argument parsing
+parser = argparse.ArgumentParser(description="Process TRILLI file paths.")
+
+parser.add_argument("--trilli_tx", type=str, default="./csv/TRILLI_32_IPE.csv",
+                    help="Path to TRILLI_TX file (default: ./csv/TRILLI_32_IPE.csv)")
+
+parser.add_argument("--trilli_3dir", type=str, default="./csv/TRILLi_pow.csv",
+                    help="Path to TRILLI_POW file (default: ./csv/TRILLi_pow.csv)")
+
+# Parse the arguments
+args = parser.parse_args()
+
+# Assign variables
+TRILLI_TX = args.trilli_tx
+TRILLI_POW = args.trilli_3dir
+
+
 
 data_vitisLib = pd.read_csv("./csv/VitisLibrary_246_ExecTime.csv")
 df_vitisLib = pd.DataFrame(data_vitisLib, columns=["Config", "Time"])
@@ -76,7 +96,7 @@ data_RTX = pd.read_csv("./csv/RTX4050_output_bilinear_512.csv")
 df_RTX = pd.DataFrame(data_RTX, columns=["tot", "tx", "mi"])
 df_RTX = df_RTX.rename(columns={"tx": "Time"})
 
-data_VCK= pd.read_csv("./csv/TRILLI_32_IPE.csv")
+data_VCK= pd.read_csv(TRILLI_TX)
 df_VCK = pd.DataFrame(data_VCK, columns=["exec_time", "write_time", "read_time"])
 df_VCK = df_VCK.rename(columns={"exec_time": "Time"})
 
@@ -129,7 +149,7 @@ data_RTX = pd.read_csv("./csv/RTX4050_output_bilinear_512.csv")
 df_RTX = pd.DataFrame(data_RTX, columns=["tot", "tx", "mi"])
 df_RTX = df_RTX.rename(columns={"tot": "Time"})
 
-data_VCK= pd.read_csv("./csv/TRILLI_32_IPE.csv")
+data_VCK= pd.read_csv(TRILLI_TX)
 df_VCK = pd.DataFrame(data_VCK, columns=["exec_time", "write_time", "read_time"])
 df_VCK = df_VCK.rename(columns={"exec_time": "Time"})
 
@@ -216,7 +236,7 @@ tempoMedioRTX4050 =  np.mean(dataPowRTX4050['Time'].to_list())
 
 totDataframe = pd.concat([totDataframe, dataPowRTX4050], ignore_index=True)
 
-dataTRILLi = pd.read_csv('./csv/TRILLi_pow.csv')
+dataTRILLi = pd.read_csv(TRILLI_POW)
 dataTRILLi = pd.DataFrame(dataTRILLi,columns = ["withPCIE_time"])
 dataTRILLi["Time"] = dataTRILLi["withPCIE_time"]
 dataTRILLi["index"] = 1
