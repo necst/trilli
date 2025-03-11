@@ -24,14 +24,13 @@ TRILLI is designed to address the computational challenges in both key component
 4. Move into the generated folder under `build/` (i.e. `cd build/hw_build`)
 5. Run: `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`
 
-## Case 1. Preparing the bitstream for Image Transformation or Rigid Registration Step
+### Case 1. Preparing the bitstream for Image Transformation or Rigid Registration Step
 
-### Option A. Automatic Flow
+#### Option A. Automatic Flow
 0. Source Vitis & XRT
 ```
 source <YOUR_PATH_TO_XRT>/setup.sh
 source <YOUR_PATH_TO_VITIS>/2022.1/settings64.sh
-
 ```
 1. Move into the root folder of this repository & build the transformation standalone bitstream
 ```
@@ -55,51 +54,87 @@ cd <YourPath>/Trilli
 ```
 make build_and_pack TARGET=hw TASK=[TX|STEP] NAME=[NAME=<name>]
 ```
-### Option B. Step-By-Step flow
+#### Option B. Step-By-Step flow
 
-0. Source Vitis & XRT
+1. Source Vitis & XRT
 ```
 source <YOUR_PATH_TO_XRT>/setup.sh
 source <YOUR_PATH_TO_VITIS>/2022.1/settings64.sh
 ```
-1. Move into the root folder of this repository & build the transformation standalone bitstream
+2. Move into the root folder of this repository & build the transformation standalone bitstream
 ```
 cd <YourPath>/Trilli
 ```
-2. Edit the default.cfg file to detail the configuration desired. 
+3. Edit the default.cfg file to detail the configuration desired. 
 For Transformation, relevant parameters are: 
  - DIMENSION := XYZ // represents the image resolution DIMENSION x DIMENSION
  - INT_PE := 1 // Number of Interpolation Processing Elements
  - PIXELS_PER_READ := XXY // represents the port width.
 
-3. Build the hardware bitstream for image transformation only
+4. Build the hardware bitstream for image transformation only
 ```
 make build_hw TARGET=hw TASK=[TX|STEP]
 ```
-4. Compile the host code: 
+5. Compile the host code: 
 ```
 make build_sw TASK=[TX|STEP]
 ```
-5. Pack the build into a single folder, ready for testing: (default name is `hw_build`)
+6. Pack the build into a single folder, ready for testing: (default name is `hw_build`)
 ```
 make pack [NAME=<name>]
 ```
-6. Move the folder generated under `build/` and move it on the deploy machine
+7. Move the folder generated under `build/` and move it on the deploy machine
 
-7. Source XRT to interact with the device
+8. Source XRT to interact with the device
 ```
 source <YOUR_PATH_TO_XRT>/setup.sh
 ```
-8. Run The following command:
+9. Run The following command:
 ```
 ./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]
 ```
 
-## Case 2. Complete image registration application 
-1. Choose a bitstream in `bitstreams/reg_step` and copy it into ??
-2. ***TODO complete the instructions***
+### Case 2. Complete image registration application 
+#### Option A. Using pre-generated bitstream
 
-#### Plotting
+1. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
+```
+make build_app
+```
+2. Move the CT volume in `3DIRG_application/PET_small/png` and the PET volume in `3DIRG_application/CT_small/png`
+3. Prepare the folder. (default name is `hw_build`)
+```
+make pack_app [NAME=<name>]
+```
+*Note 1:* That the commands prepare a folder copying dataset volumes from `3DIRG_application/CT_small/png` and `3DIRG_application/PET_small/png`. Therefore, images must be there before using this command. 
+
+*Note 2:* This command would copy a newly generated bitstream. To use the premade one, you need to manually copy it in the generated folder.
+4. Move the folder on the deploy machine
+5. Execute the application: 
+```
+./exec.sh 
+```
+
+#### Option B. Preparing bitstream and build the application
+
+1. Follow CASE 1, selecting STEP as TASK
+2. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
+```
+make build_app
+```
+3. Move the CT volume in `3DIRG_application/PET_small/png` and the PET volume in `3DIRG_application/CT_small/png`
+4. Prepare the folder. (default name is `hw_build`)
+```
+make pack_app [NAME=<name>]
+```
+*Note 1:* That the commands prepare a folder copying dataset volumes from `3DIRG_application/CT_small/png` and `3DIRG_application/PET_small/png`. Therefore, images must be there before using this command. 
+5. Execute the application: 
+```
+./exec.sh 
+```
+
+
+## Plotting Paper Figures
 To plot each result figure in the paper, please refer to the corresponding folder under **paper_fig/.**
 Each folder contains a subfolder with the figure name, and a dedicated readme for running. Per each figure, we provide some dedicated .csv files, containing sufficient numbers to replicate the paper result.
 
