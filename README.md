@@ -33,7 +33,7 @@ Following we describe three testing flows:
 
 - Case 1: using the given bitstream to test image transformation and/or image registration step
 - Case 2: building from scratch the desired bitstream for image transformation and/or image registration step
-- Case 3: target the whole image registration application. This can be done either 
+- Case 3: target the whole image registration application. This can be done either using the given bitstream for image registration step, or building it from scratch
 
 ### Case 1. Using given bitstreams for Image Transformation or Image Registration Step
 1. Choose a bitstream in `bitstreams/only_TX` or `bitstreams/reg_step` and copy it into `hw/`
