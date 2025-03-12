@@ -118,6 +118,7 @@ pack:
 	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
 	cp sw/generate_dataset.sh build/$(NAME)/
 	cp sw/remove_dataset.sh build/$(NAME)/
+	cp scripts/run_scaling_depth.sh build/$(NAME)/
 	$(info )
 	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
 	$(info )

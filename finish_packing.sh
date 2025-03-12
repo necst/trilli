@@ -6,5 +6,5 @@ if [ ! -d "build" ]; then
 fi
 
 cp -r paper_fig build/
-cp scripts/* build/
+cp scripts/gather_results_fig6.sh build/
 rm build/paper_fig/figure6/csv/*.csv
