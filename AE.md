@@ -64,3 +64,27 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 ### Figure 7. Transformation, MI and Complete Registration comparison with SoA
 
 ### Figure 8. Registration accuracy
+
+This figure evaluate the registration correctness upon the whole 3D image registration step, to align a transformed floating volume with respect to a reference. The paper_fig/figure8/data already contains all the material for reproducing the figure. Alternatively, the images in data folder needs to be re-created. In this latter case, please contact us and we will **privately** send you the dataset.
+
+1. Take the floating volume and apply a deformation using TRILLI TX step
+    ```bash
+    cd build/realvolume_onlyTX_32IPE
+    ./execute_and_prepare.sh 246 10 10 10 1
+    ```
+2. Now the deformed image obtained in the previous step must be registered.
+    ```bash
+    cd build/figure8steps/realvolume_onlyTX_32IPE
+    ./execute_and_prepare 246 10 10 10 1
+    ```
+3. At this point, it is time to register the deformed image to correct the applied deformation
+    ```bash
+        cd ../3DIRG_app_build/
+        ./exec.sh
+        ./prepare_data_for_images.sh
+    ```
+4. Now it is possible to produce the plot again
+    ```bash
+        cd ../../paper_fig/figure/8
+        python3 figure8.py
+    ```
