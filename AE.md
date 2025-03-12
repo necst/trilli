@@ -71,6 +71,14 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 
 This figure evaluate the registration correctness upon the whole 3D image registration step, to align a transformed floating volume with respect to a reference. The paper_fig/figure8/data already contains all the material for reproducing the figure. Alternatively, the images in data folder needs to be re-created. In this latter case, please contact us and we will **privately** send you the dataset.
 
+#### Option 1: Use provided data
+
+```bash
+cd build/paper_fig/figure8/
+python3 figure8.py
+```
+#### Option 2: Reproduce all the images from scratch
+
 1. Take the floating volume and apply a deformation using TRILLI TX step
     ```bash
     cd build/realvolume_onlyTX_32IPE
@@ -85,10 +93,10 @@ This figure evaluate the registration correctness upon the whole 3D image regist
     ```bash
         cd ../3DIRG_app_build/
         ./exec.sh
-        ./prepare_data_for_images.sh
+        ./gather_images_figure8.sh
     ```
 4. Now it is possible to produce the plot again
     ```bash
-        cd ../../paper_fig/figure/8
+        cd ../../paper_fig/figure8/
         python3 figure8.py
     ```
