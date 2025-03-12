@@ -28,7 +28,9 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - `default.cfg`: architecture configuration parameters
 
 ## FCCM25 Artifact Evaluation
-Following we describe three testing flows: 
+For artifact evaluation, see the [AE.md](./AE.md) file.
+
+<!-- Following we describe three testing flows: 
 
 - Case 1: using the given bitstream to test image transformation and/or image registration step
 - Case 2: building from scratch the desired bitstream for image transformation and/or image registration step
@@ -77,9 +79,9 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
     ```bash
     ./host_overlay.exe 512 18.54458648 -12.30391042 20.0 1
     ```
-----
+---- -->
 
-### Case 2. Preparing the bitstream for Image Transformation or Rigid Registration Step
+## Preparing the bitstream for Image Transformation or Rigid Registration Step
 
 1. Source Vitis & XRT
     ```bash
@@ -112,8 +114,8 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
 6. Perform steps 7 and 8 from [Case 1](#case-1-using-given-bitstreams-for-image-transformation-or-image-registration-step) on the deply machine, to generate the dataset and run.
 ----
 
-### Case 3. Complete image registration application 
-#### Option A. Using pre-generated bitstream
+## Complete image registration application 
+<!-- ### Option A. Using pre-generated bitstream
 
 1. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
     ```bash
@@ -132,8 +134,7 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
     ```bash
     ./exec.sh 
     ```
-
-#### Option B. Preparing bitstream and build the application
+### Option B. Preparing bitstream and build the application -->
 
 1. Follow CASE 1, selecting STEP as TASK
 2. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
