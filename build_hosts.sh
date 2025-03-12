@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# function set_parameter that sets a parameter in default.cfg. Arguments are the parameter name and the value to set.
+# function to set a parameter in the configuration file
 set_parameter() {
     if [ $# -ne 2 ]; then
         echo "Usage: $0 <parameter> <value>"
