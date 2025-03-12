@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# function set_parameter that sets a parameter in default.cfg. Arguments are the parameter name and the value to set.
+set_parameter() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <parameter> <value>"
+        exit 1
+    fi
+
+    PARAM=$1
+    VALUE=$2
+
+    echo "Setting $PARAM to $VALUE"
+
+    sed -i "s/$PARAM := .*/$PARAM := $VALUE/" default.cfg
+
+    if ! grep -q "$PARAM := $VALUE" default.cfg; then
+        echo "Failed to set parameter ($PARAM := $VALUE)"
+        echo "default.cfg might be broken"
+        exit 1
+    fi
+}
+
+echo "> SETTING PAPER CONFIGURATION"
+
+set_parameter DIMENSION 512
+set_parameter N_COUPLES_MAX 512
+set_parameter HIST_PE 1
+set_parameter ENTROPY_PE 1
+set_parameter INT_PE 0
+set_parameter PIXELS_PER_READ 32
+set_parameter N_COUPLES 256
+
+echo "--------------------"
+
+# list of INT_PE to test
+int_pe_list=(1 2 4 8 16 32)
+
+echo "> ITERATING OVER THE FOLLOWING INT_PE VALUES: ${int_pe_list[*]}"
+
+for int_pe in "${int_pe_list[@]}"
+do
+    echo "> BUILDING FOR INT_PE = $int_pe"
+    make -C sw clean
+    set_parameter INT_PE "$int_pe"
+    make config TASK=TX
+    make build_sw TASK=TX
+    folder_name=$(printf "onlyTX_%02dIPE" "$int_pe")
+    xclbin_name=$(printf "onlyTX_%02dIPE.xclbin" "$int_pe")
+    make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+    echo "--------------------"
+done
+
+echo "> BUILDING REGISTRATION STEP"
+set_parameter INT_PE 32
+
+make -C sw clean
+make config TASK=STEP
+make build_sw TASK=STEP
+folder_name=$(printf "STEP_%02dIPE" "$int_pe")
+xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
+make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+echo "--------------------"
