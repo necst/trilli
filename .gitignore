@@ -109,6 +109,7 @@ mutual_info/.Xil/
 mutual_info/*.xo
 mutual_info/*.xo.*
 mutual_info/testbench
+mutual_info/include/hw/mutualInfo/mutual_info.hpp
 mutual_info/*.log
 *.jou
 *.str
