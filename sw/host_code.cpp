@@ -128,7 +128,9 @@ int main(int argc, char *argv[]) {
 
     // files contaning the execution times
     std::ofstream outfile;
-    outfile.open("time.csv", std::ios_base::app); // append instead of overwrite
+    // set the filename as time_IPEX_DYY_NXX.csv where X is the Number of IPE, YY is the image resolution (DIMENSION) and XX is the given n_couples
+    std::string filename = "time_IPE" + std::to_string(INT_PE) + "_D" + std::to_string(DIMENSION) + "_N" + std::to_string(n_couples)+".csv";
+    outfile.open(filename, std::ios_base::app); // append instead of overwrite
     outfile << "exec_time,write_time,read_time"<< std::endl;
     std::ofstream outfile_sw;
     outfile_sw.open("time_sw.csv", std::ios_base::app); // append instead of overwrite
