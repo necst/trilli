@@ -34,7 +34,7 @@ set_parameter N_COUPLES 256
 echo "--------------------"
 
 # list of INT_PE to test
-int_pe_list=(32)
+int_pe_list=(1 2 4 8 16 32)
 
 echo "> ITERATING OVER THE FOLLOWING INT_PE VALUES: ${int_pe_list[*]}"
 
@@ -43,10 +43,22 @@ do
     echo "> BUILDING FOR INT_PE = $int_pe"
     make -C sw clean
     set_parameter INT_PE "$int_pe"
-    make config
-    make build_sw 
+    make config TASK=TX
+    make build_sw TASK=TX
     folder_name=$(printf "onlyTX_%02dIPE" "$int_pe")
     xclbin_name=$(printf "onlyTX_%02dIPE.xclbin" "$int_pe")
     make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
     echo "--------------------"
 done
+
+echo "> BUILDING REGISTRATION STEP"
+set_parameter INT_PE 32
+
+make -C sw clean
+make config TASK=STEP
+make build_sw TASK=STEP
+folder_name=$(printf "STEP_%02dIPE" "$int_pe")
+xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
+make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+echo "--------------------"
+
