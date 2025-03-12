@@ -84,18 +84,13 @@ python3 figure8.py
     cd build/realvolume_onlyTX_32IPE
     ./execute_and_prepare.sh 246 10 10 10 1
     ```
-2. Now the deformed image obtained in the previous step must be registered.
-    ```bash
-    cd build/figure8steps/realvolume_onlyTX_32IPE
-    ./execute_and_prepare 246 10 10 10 1
-    ```
-3. At this point, it is time to register the deformed image to correct the applied deformation
+2. At this point, it is time to register the deformed image to correct the applied deformation
     ```bash
         cd ../3DIRG_app_build/
         ./exec.sh
         ./gather_images_figure8.sh
     ```
-4. Now it is possible to produce the plot again
+3. Now it is possible to produce the plot again
     ```bash
         cd ../../paper_fig/figure8/
         python3 figure8.py
