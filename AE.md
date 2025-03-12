@@ -31,7 +31,11 @@ The folder `bitstreams/` contains the bitstreams used for the evaluation, while 
     ./build_hosts.sh
     ```
     This will create multiple folders under `build/` containing the multiple configurations that should be tested.
-5. Move the `build/` folder to the deploy machine
+5. Copy the plotting folder `paper_fig/` and some utils script into `build/` by running:
+    ```bash
+    ./finish_packing.sh
+    ```
+6. Move the `build/` folder to the deploy machine
 
 ---
 
@@ -54,10 +58,10 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
     ```bash
     ./run_scaling_depth.sh
     ```
-3. Each folder will contain 5 csv files, one for each depth. For plotting, the csv files need to be copied into `figures/`. To do so, launch the following command in the `build/` folder:
+3. Each folder will contain 5 csv files, one for each depth. For plotting, the csv files need to be copied into `paper_fig/`. To do so, launch the following command in the `build/` folder:
     ```bash
     cd -
-    ./gather_results_fig7.sh
+    ./gather_results_fig6.sh
     ```
 4. ***TODO complete the procedure for plotting***
 
