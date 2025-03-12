@@ -116,6 +116,8 @@ pack:
 	cp -r sw/dataset/** build/$(NAME)/dataset/
 	cp sw/host_overlay.exe build/$(NAME)/
 	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
+	cp sw/generate_dataset.sh build/$(NAME)/
+	cp sw/remove_dataset.sh build/$(NAME)/
 	$(info )
 	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
 	$(info )
@@ -128,6 +130,8 @@ pack_app: build_app
 	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
 	cp -r 3DIRG_application/$(APP_NAME) build/$(NAME)/
 	cp exec.sh build/$(NAME)/
+	cp sw/generate_dataset.sh build/$(NAME)/
+	cp sw/remove_dataset.sh build/$(NAME)/
 	$(info )
 	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
 	$(info )
