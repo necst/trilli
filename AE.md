@@ -69,7 +69,13 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 
 ### Figure 8. Registration accuracy
 
-This figure evaluate the registration correctness upon the whole 3D image registration step, to align a transformed floating volume with respect to a reference. The paper_fig/figure8/data already contains all the material for reproducing the figure. Alternatively, the images in data folder needs to be re-created. In this latter case, please contact us and we will **privately** send you the dataset.
+This figure evaluate the registration correctness upon the whole 3D image registration step, to align a transformed floating volume with respect to a reference. 
+
+The paper_fig/figure8/data already contains all the material for reproducing the figure. 
+Alternatively, the images in data folder needs to be re-created.
+In this latter case, please contact us and we will **privately** send you the dataset.
+
+Note: build/figure8steps contains 2 different builds. One is a simple transformation step, to apply deformation. The other is for 3D image registration application
 
 #### Option 1: Use provided data
 
@@ -81,16 +87,16 @@ python3 figure8.py
 
 1. Take the floating volume and apply a deformation using TRILLI TX step
     ```bash
-    cd build/realvolume_onlyTX_32IPE
-    ./execute_and_prepare.sh 246 10 10 10 1
+    cd build/figure8steps/realvolume_onlyTX_32IPE
+    ./execute_and_prepare 246 10 10 10 1
     ```
-2. At this point, it is time to register the deformed image to correct the applied deformation
+3. At this point, it is time to register the deformed image to correct the applied deformation
     ```bash
         cd ../3DIRG_app_build/
         ./exec.sh
         ./gather_images_figure8.sh
     ```
-3. Now it is possible to produce the plot again
+4. Now it is possible to produce the plot again
     ```bash
         cd ../../paper_fig/figure8/
         python3 figure8.py
