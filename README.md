@@ -17,7 +17,7 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - Python 3.8
 
 ## Code overview
-- `3DIRG_application/`: complete ragistration framework
+- `3DIRG_application/`: complete registration framework
 - `aie/`: AI Engines source code
 - `common/`: constants and configuration generator
 - `data_movers/`: PL kernels source code
@@ -26,7 +26,7 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - `mutual_info/`: PL mutual information kernel source code from **[Hephaestus](https://dl.acm.org/doi/10.1145/3607928)**
 - `soa/`: GPU 3D Image Registration from athena, with scripts for simplifying testing
 - `sw/`: host source code
-- `default.cfg`: architecutre configuration parameters
+- `default.cfg`: architecture configuration parameters
 
 ## Artifact evaluation
 Following we describe three testing flows: 
@@ -134,3 +134,17 @@ Each folder contains a subfolder with the figure name, and a dedicated readme fo
 - **[Vitis Libraries](https://github.com/Xilinx/Vitis_Libraries/tree/2022.1)** - WarpAffine3D kernel for image transformation
 - **[ITK](https://github.com/InsightSoftwareConsortium/ITK/)** powell-based 3D image registration
 - **[SimpleITK](https://github.com/SimpleITK/SimpleITK)** powell-based 3D image registration
+
+## Paper Citation
+
+If you find this repository useful, please use the following citation:
+
+```
+@inproceedings{sorrentino2025trilli,
+    title = {Soaring with TRILLI: an HW/SW Heterogeneous Accelerator for Multi-Modal Image Registration},
+    author = {Giuseppe, Sorrentino and Paolo S., Galfano and Eleonora, D'Arnese and Davide, Conficconi},
+    year = 2025,
+    booktitle={2025 IEEE 33rd Annual International Symposium on Field-Programmable Custom Computing Machines (FCCM)},
+    organization={IEEE}
+ } 
+```
