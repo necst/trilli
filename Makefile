@@ -37,7 +37,8 @@ help::
 	$(ECHO) "  make clean"
 	$(ECHO) ""
 
-CONFIG = default.cfg
+CFG = default.cfg
+CONFIG = $(abspath $(CFG))
 include ${CONFIG}
 
 # can be either STEP or TX
@@ -72,6 +73,7 @@ build_app:
 	make -C ./3DIRG_application build_host EXECUTABLE=$(APP_NAME)
 
 config:
+	$(info using config file $(CONFIG))
 	$(info )
 	$(info ************ Generating configuration files ************)
 	$(info - DIMENSION        $(DIMENSION))
@@ -106,22 +108,30 @@ testbench_noaie:
 	make -C ./data_movers testbench_noaie
 
 NAME := hw_build
+XCLBIN := hw/overlay_hw.xclbin 
 pack:
 	mkdir -p build/$(NAME)/dataset
 	mkdir -p build/$(NAME)/dataset_output
 	mkdir -p build/$(NAME)/dataset_sw_output
 	cp -r sw/dataset/** build/$(NAME)/dataset/
 	cp sw/host_overlay.exe build/$(NAME)/
-	cp hw/overlay_hw.xclbin build/$(NAME)/
+	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
+	$(info )
+	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
+	$(info )
 
 pack_app: build_app
 	mkdir -p build/$(NAME)/PET/
 	mkdir -p build/$(NAME)/CT/
 	cp -r 3DIRG_application/CT_small/png/* build/$(NAME)/CT/
 	cp -r 3DIRG_application/PET_small/png/* build/$(NAME)/PET/
-	cp hw/overlay_hw.xclbin build/$(NAME)/
+	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
 	cp -r 3DIRG_application/$(APP_NAME) build/$(NAME)/
 	cp exec.sh build/$(NAME)/
+	$(info )
+	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
+	$(info )
+
 
 build_and_pack_app:
 	$(info )
