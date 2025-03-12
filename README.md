@@ -5,7 +5,6 @@ TRILLI is designed to address the computational challenges in both key component
 
 ## System architecture
 ![System Architecture](./figures/architecture_diagram.png)
-
 *System Architecture Diagram: TRILLI integration with a CPU-based Powell optimizer for multi-modal 3D rigid image registration. Input images are used for an initial transformation and accelerated registration via TRILLI. The resulting MI is used by the Powell optimizer
 to iteratively refine transformation parameters based on user-defined settings. The final output is a registered floating volume.*
 
@@ -22,7 +21,6 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - `aie/`: AI Engines source code
 - `common/`: constants and configuration generator
 - `data_movers/`: PL kernels source code
-- `figures/`: figure for TRILLI's repository
 - `hw/`: system integration and output bitstream
 - `mutual_info/`: PL mutual information kernel source code from **[Hephaestus](https://dl.acm.org/doi/10.1145/3607928)**
 - `soa/`: GPU 3D Image Registration from athena, with scripts for simplifying testing
@@ -53,28 +51,33 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
     ```bash
     cd <your-path>/trilli
     ```
-2. Load the configuration used to build the bitstreams
+3. Load the configuration used to build the bitstreams
     ```bash
     make config CFG=bitstreams/config_DIM512_IPE32.cfg
     ```
-3. Compile the host code
+4. Compile the host code
     ```bash
     make build_sw TASK=[TX|STEP]
     ```
-4. Pack the build into a single folder, ready for testing
+5. Pack the build into a single folder, ready for testing
     ```bash
     make pack XCLBIN=<xclbin-path> [NAME=<name>]
     ```
     This command generates the folder `build/<name>` (default name is `hw_build`) which will contain the bitstream `<xclbin-path>` (i.e. `bitstreams/OnlyTX_32IPE.xclbin`), the host executable and the dataset.
-5. Move the generated folder `build/<name>` (i.e. `cd build/hw_build`) to the deploy machine
-6. On the deploy machine, generate the dataset with `./generate_dataset.sh [dim] [depth]`. Considering the parameters used for the paper, the command is:
+6. Move the generated folder `build/<name>` (i.e. `cd build/hw_build`) to the deploy machine
+7. On the deploy machine, generate the dataset with `./generate_dataset.sh [dim] [depth]`. Considering the parameters used for the paper, the command is:
     ```bash
     ./generate_dataset.sh 512 256
     ```
-7. Run with: `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`. Considering the parameters used for the paper, the command is: ***TODO fill in parameters***
+8. Source XRT on the deploy machine
+    ```bash
+    source <YOUR_PATH_TO_XRT>/setup.sh
+    ```
+9. Run on the deploy machine with: `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`. Considering the parameters used for the paper, the command is: ***TODO fill in parameters***
     ```bash
     ./host_overlay.exe 512 18.54458648 -12.30391042 20.0 1
     ```
+----
 
 ### Case 2. Preparing the bitstream for Image Transformation or Rigid Registration Step
 
@@ -107,6 +110,7 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
     ```
 5. Move the generated folder, `build/NAME` (i.e. `cd build/hw_build`), on the deploy machine
 6. Perform steps 7 and 8 from [Case 1](#case-1-using-given-bitstreams-for-image-transformation-or-image-registration-step) on the deply machine, to generate the dataset and run.
+----
 
 ### Case 3. Complete image registration application 
 #### Option A. Using pre-generated bitstream
