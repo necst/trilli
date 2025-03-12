@@ -27,7 +27,7 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - `sw/`: host source code
 - `default.cfg`: architecture configuration parameters
 
-## Artifact evaluation
+## FCCM25 Artifact Evaluation
 Following we describe three testing flows: 
 
 - Case 1: using the given bitstream to test image transformation and/or image registration step
