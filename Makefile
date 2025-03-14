@@ -120,6 +120,7 @@ pack:
 	cp sw/generate_dataset.sh build/$(NAME)/
 	cp sw/remove_dataset.sh build/$(NAME)/
 	cp scripts/run_scaling_depth.sh build/$(NAME)/
+	cp scripts/run_for_SoA_comparison.sh build/$(NAME)/
 	cp $(CONFIG) build/$(NAME)/
 	$(info )
 	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
