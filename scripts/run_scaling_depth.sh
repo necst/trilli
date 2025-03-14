@@ -11,7 +11,7 @@ reps=50
 
 for n_couples in "${n_couples_list[@]}"
 do
-    echo "> Running for $n_couples couples"
+    echo "> Running for depth = $n_couples"
     ./host_overlay.exe $n_couples $tx $ty $ang $reps 
     echo "--------------------"
 done

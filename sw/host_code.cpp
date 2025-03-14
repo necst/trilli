@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     #ifndef ONLYTX
     printf("Testing registration STEP");
     #else
-    printf("Testing onlt transformation");
+    printf("Testing only transformation");
     #endif
     
     int n_couples = 512;
