@@ -62,7 +62,7 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
     ```bash
     ./run_scaling_depth.sh
     ```
-4. Each folder will contain 5 csv files, one for each depth. For plotting, the csv files need to be copied into `paper_fig/`. To do so, launch the following command in the `build/` folder:
+4. Each folder will contain 5 csv files, one for each depth. For plotting, the csv files need to be copied into `paper_fig/figure6/csv/`. To do so, launch the following command in the `build/` folder:
     ```bash
     cd ..
     ./gather_results_fig6.sh
@@ -70,6 +70,28 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 5. ***TODO complete the procedure for plotting***
 
 ### Figure 7. Transformation, MI and Complete Registration comparison with SoA
+
+***TODO add brief description*** 
+
+1. If you have already run the tests for Figure 6, go to step ***N???***. Otherwise, follow the steps below to run only the tests that are necessary for this figure.
+2. Source XRT
+    ```bash
+    source <YOUR_PATH_TO_XRT>/setup.sh
+    ```
+3. For each configuration needed for this figure, enter the respective folder. E.g.
+    ```bash
+    cd build/onlyTX_32IPE
+    ```
+4. Run the tests:
+    ```bash
+    ./run_for_SoA_comparison.sh
+    ```
+5. Each folder will contain a csv files with the execution times. For plotting, the csv files need to be copied into `paper_fig/figure7/csv/`. To do so, launch the following command in the `build/` folder:
+    ```bash
+    cd ..
+    ./gather_results_fig7.sh
+    ```
+6. ***TODO complete the procedure for plotting***
 
 ### Figure 8. Registration accuracy
 
