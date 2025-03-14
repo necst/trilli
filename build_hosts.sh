@@ -53,6 +53,8 @@ done
 
 echo "> BUILDING REGISTRATION STEP"
 set_parameter INT_PE 32
+set_parameter HIST_PE 16
+set_parameter ENTROPY_PE 4
 
 make -C sw clean
 make config TASK=STEP
