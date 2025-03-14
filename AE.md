@@ -10,7 +10,7 @@
 
 ## Testing
 
-The folder `bitstreams/` contains the bitstreams used for the evaluation, while the .cfg files in `bitstreams/` contain the configuration used to build the bitstreams. If, for any reason, the bitstreams need to be rebuilt, follow the steps in ... ***TODO link to other README with build instructions***
+The folder `bitstreams/` contains the bitstreams used for the evaluation. If, for any reason, the bitstreams need to be rebuilt, follow the steps in ... ***TODO link to other README with build instructions***
 
 ### Preliminary steps
 1. Clone the repository
@@ -26,12 +26,12 @@ The folder `bitstreams/` contains the bitstreams used for the evaluation, while 
     source <YOUR_PATH_TO_XRT>/setup.sh
     source <YOUR_PATH_TO_VITIS>/2022.1/settings64.sh
     ```
-4. Build the host code
+4. Build the host code for all the necessary configurations:
     ```bash
     ./build_hosts.sh
     ```
-    This will create multiple folders under `build/` containing the multiple configurations that should be tested.
-5. Copy the plotting folder `paper_fig/` and some utils script into `build/` by running:
+    This will create multiple folders under `build/` containing the various configurations that should be tested.
+5. Finish packing the builds into the `build/` folder by running:
     ```bash
     ./finish_packing.sh
     ```
@@ -42,6 +42,8 @@ The folder `bitstreams/` contains the bitstreams used for the evaluation, while 
 ### Figure 6. Geometric transformation IPE scaling
 ***Note: the following operations must be performed on the deploy machine (where the `build/` folder has been moved).***
 
+***TODO add brief description of the plot (?)*** 
+
 The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the geometric transformation are placed in the `build/` folder. The folder contains multiple subfolders, each corresponding to a different number of IPEs. Such folders are:
 - `build/onlyTX_01IPE`
 - `build/onlyTX_02IPE`
@@ -50,13 +52,13 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 - `build/onlyTX_16IPE`
 - `build/onlyTX_32IPE`
 
-1. For each configuration, enter the respective folder. E.g.
-    ```bash
-    cd build/onlyTX_01IPE
-    ```
-2. Source XRT
+1. Source XRT
     ```bash
     source <YOUR_PATH_TO_XRT>/setup.sh
+    ```
+2. For each configuration, enter the respective folder. E.g.
+    ```bash
+    cd build/onlyTX_01IPE
     ```
 3. Run the tests for the different depths (32, 64, 128, 256 and 512) by executing the following command:
     ```bash
@@ -69,23 +71,35 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
     ```
 5. ***TODO complete the procedure for plotting***
 
+----
+
 ### Figure 7. Transformation, MI and Complete Registration comparison with SoA
+***Note: the following operations must be performed on the deploy machine (where the `build/` folder has been moved).***
 
-***TODO add brief description*** 
+In figure 7, we compare the execution times of the transformation only (`build/onlyTX_32IPE`), single registration step (`build/STEP_32IPE`) and complete registration application (`build/3DIR_Application`) against the state of the art.
 
-1. If you have already run the tests for Figure 6, go to step ***N???***. Otherwise, follow the steps below to run only the tests that are necessary for this figure.
-2. Source XRT
+1. Source XRT
     ```bash
     source <YOUR_PATH_TO_XRT>/setup.sh
     ```
-3. For each configuration needed for this figure, enter the respective folder. E.g.
+2. If you have already run the configurations for Figure 6, you can skip running `build/onlyTX_32IPE`. Otherwise, enter the folder and run the tests:
     ```bash
     cd build/onlyTX_32IPE
-    ```
-4. Run the tests:
-    ```bash
     ./run_for_SoA_comparison.sh
+    cd -
     ```
+3. For the single registration step, enter the respective folder and run the tests:
+    ```bash
+    cd build/STEP_32IPE
+    ./run_for_SoA_comparison.sh
+    cd -
+    ```
+4. Finally, run the complete registration application:
+    ```bash
+    cd build/3DIR_Application
+    ./exec.sh
+    ```
+    ***Note: to get a proper dataset contact the authors privately.***
 5. Each folder will contain a csv files with the execution times. For plotting, the csv files need to be copied into `paper_fig/figure7/csv/`. To do so, launch the following command in the `build/` folder:
     ```bash
     cd ..
