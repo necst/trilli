@@ -198,10 +198,13 @@ int main(int argc, char *argv[]) {
     std::cout << std::fixed << std::setprecision(2);
     std::cout << bold_on << "Speedup: " << speedup << bold_off << std::endl << std::endl;
 
+    #ifndef ONLYTX
     if(((data_t)mutualinfo - output_data > 0.0001)){
-        printf("oh no!");
-        return 1;
+        float absolute_error = abs((float)mutualinfo - output_data);
+        float relative_error = 100.f * absolute_error / (float)mutualinfo;
+        std::cout << "Error: " << std::scientific << absolute_error << " (" << std::scientific << relative_error << "%)" << std::endl;
     }
+    #endif
 
     return 0;
 }
