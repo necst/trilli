@@ -61,15 +61,15 @@ set_parameter ENTROPY_PE 4
 make -C sw clean
 make config TASK=STEP
 make build_sw TASK=STEP || exit 1
-folder_name=$(printf "STEP_%02dIPE" "$int_pe")
-xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
+folder_name=STEP_32IPE
+xclbin_name=STEP_32IPE.xclbin
 make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name" || exit 1
 echo "--------------------"
 
 
 echo "> BUILDING REGISTRATION Application"
 folder_name="3DIRG_Application"
-xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
+xclbin_name=STEP_32IPE.xclbin
 make pack_app NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name" || exit 1
 echo "--------------------"
 echo ""
