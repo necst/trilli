@@ -77,3 +77,5 @@ echo "BUILD COMPLETE"
 echo ""
 echo "All builds have been placed under the folder build/"
 ls -l build/
+
+./finish_packing.sh

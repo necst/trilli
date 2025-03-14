@@ -31,11 +31,7 @@ The folder `bitstreams/` contains the bitstreams used for the evaluation. If, fo
     ./build_hosts.sh
     ```
     This will create multiple folders under `build/` containing the various configurations that should be tested.
-5. Finish packing the builds into the `build/` folder by running:
-    ```bash
-    ./finish_packing.sh
-    ```
-6. Move the `build/` folder to the deploy machine
+5. Move the `build/` folder to the deploy machine
 
 ---
 
