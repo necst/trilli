@@ -99,7 +99,7 @@ In figure 7, we compare the execution times of the transformation only (`build/o
     cd build/3DIR_Application
     ./exec.sh
     ```
-    ***Note: to get a proper dataset contact the authors privately.***
+    ***Note: to get a proper dataset contact the authors privately. Alternatively, run*** `./generate_dataset.sh`
 5. Each folder will contain a csv files with the execution times. For plotting, the csv files need to be copied into `paper_fig/figure7/csv/`. To do so, launch the following command in the `build/` folder:
     ```bash
     cd ..

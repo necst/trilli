@@ -133,8 +133,12 @@ pack_app: build_app
 	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
 	cp -r 3DIRG_application/$(APP_NAME) build/$(NAME)/
 	cp exec.sh build/$(NAME)/
-	cp sw/generate_dataset.sh build/$(NAME)/
-	cp sw/remove_dataset.sh build/$(NAME)/
+	cp 3DIRG_application/generate_dataset.sh build/$(NAME)/
+	cp 3DIRG_application/remove_dataset.sh build/$(NAME)/
+	cp sw/dataset/duplicate_slices.sh build/$(NAME)/PET/
+	cp sw/dataset/duplicate_slices.sh build/$(NAME)/CT/
+	cp -r sw/dataset/size_512 build/$(NAME)/PET/
+	cp -r sw/dataset/size_512 build/$(NAME)/CT/
 	cp $(CONFIG) build/$(NAME)/
 	$(info )
 	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
