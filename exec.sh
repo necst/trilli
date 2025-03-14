@@ -27,6 +27,14 @@ OUTPUT_FOLDER=./output_folder/
 REF_FOLDER=./CT/
 FLT_FOLDER=./PET/
 
+if [ -n "$1" ]; then
+    FLT_FOLDER=$1
+fi
+
+echo "Reference folder: $REF_FOLDER"
+echo "Floating folder: $FLT_FOLDER"
+echo "Registered output folder: $OUTPUT_FOLDER"
+
 mkdir -p $OUTPUT_FOLDER
 
 ./$APP_NAME $REF_FOLDER $FLT_FOLDER $OUTPUT_FOLDER $VOLUME_DEPTH

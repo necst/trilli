@@ -121,19 +121,26 @@ python3 figure8.py
 ```
 #### Option 2: Reproduce all the images from scratch
 
-1. Take the floating volume and apply a deformation using TRILLI TX step
+1. Source XRT
     ```bash
-    cd build/figure8steps/realvolume_onlyTX_32IPE
-    ./execute_and_prepare 246 10 10 10 1
+    source <YOUR_PATH_TO_XRT>/setup.sh
     ```
-3. At this point, it is time to register the deformed image to correct the applied deformation
+2. Apply a deformation to the floating volume:
     ```bash
-        cd ../3DIRG_app_build/
-        ./exec.sh
-        ./gather_images_figure8.sh
+    cd build
+    ./generate_distortion.sh 246 10 10 10
     ```
-4. Now it is possible to produce the plot again
+3. Now, apply the 3D image registration step:
     ```bash
-        cd ../../paper_fig/figure8/
-        python3 figure8.py
+    cd 3DIRG_Application
+    ./exec.sh ../onlyTX_32IPE/dataset_output/
+    cd -
+4. To plot this figure, the original image, the distorted image and the registered image need to be copied into `paper_fig/figure8/data/`. To do so, launch the following command in the `build/` folder:
+    ```bash
+    ./gather_images_fig8.sh
+    ```
+5. Now it is possible to produce the plot again
+    ```bash
+    cd paper_fig/figure8/
+    python3 figure8.py
     ```
