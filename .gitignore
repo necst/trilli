@@ -137,3 +137,5 @@ common/constants.h
 data_movers/setup_interpolator_body.hpp
 data_movers/writer_body.hpp
 data_movers/setup_mi_body.hpp
+3DIRG_application/*.xclbin
+3DIRG_application/trilli_app
