@@ -14,7 +14,10 @@ echo "Gathering results for figure 6..."
 
 for folder in "${FOLDERS[@]}"
 do
-    cp "$folder"/time_*.csv build/paper_fig/figure6/csv/
+    if ! cp "$folder"/time_IPE*.csv paper_fig/figure6/csv/; then
+        echo "Error: some csv files are missing in folder $folder"
+        exit 1
+    fi
 done
 
 echo "Done"
