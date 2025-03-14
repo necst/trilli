@@ -45,10 +45,10 @@ do
     make -C sw clean
     set_parameter INT_PE "$int_pe"
     make config TASK=TX
-    make build_sw TASK=TX
+    make build_sw TASK=TX || exit 1
     folder_name=$(printf "onlyTX_%02dIPE" "$int_pe")
     xclbin_name=$(printf "onlyTX_%02dIPE.xclbin" "$int_pe")
-    make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+    make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name" || exit 1
     echo "--------------------"
 done
 
@@ -60,17 +60,17 @@ set_parameter ENTROPY_PE 4
 
 make -C sw clean
 make config TASK=STEP
-make build_sw TASK=STEP
+make build_sw TASK=STEP || exit 1
 folder_name=$(printf "STEP_%02dIPE" "$int_pe")
 xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
-make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name" || exit 1
 echo "--------------------"
 
 
 echo "> BUILDING REGISTRATION Application"
 folder_name="3DIRG_Application"
 xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
-make pack_app NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+make pack_app NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name" || exit 1
 echo "--------------------"
 echo ""
 echo "BUILD COMPLETE"
