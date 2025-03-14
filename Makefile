@@ -127,8 +127,8 @@ pack:
 pack_app: build_app
 	mkdir -p build/$(NAME)/PET/
 	mkdir -p build/$(NAME)/CT/
-	cp -r 3DIRG_application/CT_small/png/* build/$(NAME)/CT/
-	cp -r 3DIRG_application/PET_small/png/* build/$(NAME)/PET/
+	cp scripts/README.txt build/$(NAME)/PET/
+	cp scripts/README.txt build/$(NAME)/CT/
 	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin
 	cp -r 3DIRG_application/$(APP_NAME) build/$(NAME)/
 	cp exec.sh build/$(NAME)/

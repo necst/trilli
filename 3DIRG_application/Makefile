@@ -59,12 +59,12 @@ HOST_SRCS += $(SW_DIR)/include/software_mi/software_mi.cpp
 build_host: $(EXECUTABLE)
 $(EXECUTABLE): $(HOST_SRCS)
 	$(CC) -o $(EXECUTABLE) $^ $(CXXFLAGS) -DHW_REG $(LDFLAGS) $(CFLAGS) $(LIBS) -O2
+
+sw_test:$(MAIN_CODE) $(core_code)
 	@rm -f ./overlay_hw.xclbin
 	@rm -f ./overlay_hw_emu.xclbin
 	@ln -s ../hw/overlay_hw.xclbin
 	@ln -s ../hw/overlay_hw_emu.xclbin
-
-sw_test:$(MAIN_CODE) $(core_code)
 	$(CC) $(CFLAGS) $(MAIN_CODE) -o $(EXECUTABLE) $(OPENCVLIB)
 
 run_sw_test: sw_test

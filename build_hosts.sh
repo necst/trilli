@@ -36,6 +36,7 @@ echo "--------------------"
 # list of INT_PE to test
 int_pe_list=(1 2 4 8 16 32)
 
+
 echo "> ITERATING OVER THE FOLLOWING INT_PE VALUES: ${int_pe_list[*]}"
 
 for int_pe in "${int_pe_list[@]}"
@@ -51,6 +52,7 @@ do
     echo "--------------------"
 done
 
+
 echo "> BUILDING REGISTRATION STEP"
 set_parameter INT_PE 32
 set_parameter HIST_PE 16
@@ -64,3 +66,14 @@ xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
 make pack NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
 echo "--------------------"
 
+
+echo "> BUILDING REGISTRATION Application"
+folder_name="3DIRG_Application"
+xclbin_name=$(printf "STEP_%02dIPE.xclbin" "$int_pe")
+make pack_app NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name"
+echo "--------------------"
+echo ""
+echo "BUILD COMPLETE"
+echo ""
+echo "All builds have been placed under the folder build/"
+ls -l build/
