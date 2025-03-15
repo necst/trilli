@@ -1,12 +1,4 @@
-# TODO copy csv from each folder and put them into the build/paper_fig/figure6/csv/ folder
-
-# FOLDERS:
-# onlyTX_01IPE
-# onlyTX_02IPE
-# onlyTX_04IPE
-# onlyTX_08IPE
-# onlyTX_16IPE
-# onlyTX_32IPE
+#!/bin/bash
 
 FOLDERS=(onlyTX_01IPE onlyTX_02IPE onlyTX_04IPE onlyTX_08IPE onlyTX_16IPE onlyTX_32IPE)
 

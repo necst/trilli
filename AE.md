@@ -65,7 +65,11 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
     cd ..
     ./gather_results_fig6.sh
     ```
-5. ***TODO complete the procedure for plotting***
+5. Plot figure 6:
+    ```bash
+    cd paper_fig/figure6/
+    python3 figure6.py
+    ```
 
 ----
 
@@ -101,7 +105,11 @@ In figure 7, we compare the execution times of the transformation only (`build/o
     cd ..
     ./gather_results_fig7.sh
     ```
-6. ***TODO complete the procedure for plotting***
+6. Plot figure 7:
+    ```bash
+    cd paper_fig/figure7/
+    python3 figure7.py
+    ```
 
 ### Figure 8. Registration accuracy
 

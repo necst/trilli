@@ -70,6 +70,7 @@ echo "--------------------"
 echo "> BUILDING REGISTRATION Application"
 folder_name="3DIRG_Application"
 xclbin_name=STEP_32IPE.xclbin
+make -C 3DIRG_application clean
 make pack_app NAME="$folder_name" XCLBIN="bitstreams/$xclbin_name" || exit 1
 echo "--------------------"
 echo ""
