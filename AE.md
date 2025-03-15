@@ -1,8 +1,15 @@
 # Artifact evaluation
 
-## Abstract
+This document describes how to reproduce the results presented in the paper *"Soaring with TRILLI: an HW/SW Heterogeneous Accelerator for Multi-Modal Image Registration"*, submitted to the 33rd IEEE International Symposium on Field-Programmable Custom Computing Machines (FCCM 2025).
+Specifically, we provide instructions on how to compile the host applications and run the experiments using the prepared bitstreams to reproduce the results presented in the paper.
+
+The figures that can be reproduced are the following:
+- [Figure 6](#figure-6-geometric-transformation-ipe-scaling) - Geometric transformation IPE scaling
+- [Figure 7](#figure-7-transformation-mi-and-complete-registration-comparison-with-soa) - Transformation, MI and Complete Registration comparison with SoA
+- [Figure 8](#figure-8-registration-accuracy) - Registration accuracy
 
 3D rigid image registration is a pivotal procedure in computer vision that aligns a floating volume with a reference one to correct positional and rotational distortions. It serves either as a stand-alone process or as a pre-processing step for non-rigid registration, where the rigid part dominates the computational cost. Various hardware accelerators have been proposed to optimize its compute-intensive components: geometric transformation with interpolation and similarity metric computation. However, existing solutions fail to address both components effectively, as GPUs excel at image transformation, while FPGAs in similarity metric computation. To close this gap, we propose TRILLI, a novel Versal-based accelerator for image transformation and interpolation. TRILLI optimally maps each computational step on the proper heterogeneous hardware component. TRILLI achieves between 5.32× and 36.75× speedup and between 10.04× and 104.60× energy efficiency improvement for image transformation and interpolation against the top hardware accelerated solutions. Moreover, we integrate it with an FPGA-based similarity metric from literature to complete a rigid image registration step (i.e., transformation, interpolation, and similarity metric) attaining between 18.60× and 74.04× speedup and between 36.11× and 117.65× energy efficiency improvement over the top-performing hardware-accelerated solutions.
+
 ## Requirements
 
 ***Software Dependencies***
@@ -17,7 +24,7 @@
 . *PCIe 3.0* 
 - *Intel I7-4470*: Other CPUs may work as well, but currently untested.
 
-## Testing
+## Experiments workflow
 
 The folder `bitstreams/` contains the bitstreams used for the evaluation. If, for any reason, the bitstreams need to be rebuilt, follow the steps in ... ***TODO link to other README with build instructions***
 
