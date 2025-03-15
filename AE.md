@@ -1,14 +1,19 @@
 # Artifact evaluation
 
-## Abstract
+This document describes how to reproduce the results presented in the paper *"Soaring with TRILLI: an HW/SW Heterogeneous Accelerator for Multi-Modal Image Registration"*, submitted to the 33rd IEEE International Symposium on Field-Programmable Custom Computing Machines (FCCM 2025).
+Specifically, we provide instructions on how to compile the host applications and run the experiments using the prepared bitstreams to reproduce the results presented in the paper.
 
-***TODO write abstract***
+The figures that can be reproduced are the following:
+- [Figure 6](#figure-6-geometric-transformation-ipe-scaling) - Geometric transformation IPE scaling
+- [Figure 7](#figure-7-transformation-mi-and-complete-registration-comparison-with-soa) - Transformation, MI and Complete Registration comparison with SoA
+- [Figure 8](#figure-8-registration-accuracy) - Registration accuracy
+
 
 ## Requirements
 
 ***TODO write info about sw and hw dependencies***
 
-## Testing
+## Experiments workflow
 
 The folder `bitstreams/` contains the bitstreams used for the evaluation. If, for any reason, the bitstreams need to be rebuilt, follow the steps in ... ***TODO link to other README with build instructions***
 
