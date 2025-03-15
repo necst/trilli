@@ -81,7 +81,15 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
     ```
 ---- -->
 
-## Preparing the bitstream for Image Transformation or Rigid Registration Step
+## Building
+
+Two different designs are available for building:
+- **TX** - Geometric transformation with interpolation
+- **STEP** - Image registration step (geometric transformation + mutual information computation)
+
+Moreover, design parameters can be set in the `default.cfg` file as described in the following sections.
+
+### Flow
 
 1. Source Vitis & XRT
     ```bash
@@ -95,59 +103,57 @@ The file `bitstreams/config_DIM512_IPE32.cfg` contains the configuration used to
 3. Edit the `default.cfg` file to detail the configuration desired. 
 
     *For Transformation, relevant parameters are:*
-    - `DIMENSION := XYZ` - represents the image resolution DIMENSION x DIMENSION. Choices = [1,2,4,8,16]
-    - `INT_PE := XY` - Number of Interpolation Processing Elements. Choices: [1,2,4,8,16,32]
-    - `PIXELS_PER_READ := XYZ` - represents the port width. [32,64,128]
+    - `DIMENSION := ...` - represents the image resolution DIMENSION x DIMENSION. Choices = [1,2,4,8,16]
+    - `INT_PE := ...` - Number of Interpolation Processing Elements. Choices: [1,2,4,8,16,32]
+    - `PIXELS_PER_READ := ...` - represents the port width. [32,64,128]
 
     *For the rigid step, instead:*
-    - `DIMENSION := XY` - represents the image resolution DIMENSION x DIMENSION, 512 for the paper
-    - `HIST_PE := XY` - Histogram Processing elements for Mutual Information. Choices = [1,2,4,8,16]
-    - `EPE_PE := XY` - Histogram Processing elements for Mutual Information. Choices = [1,2,4,8,16]
-    - `INT_PE := XY` - Number of Interpolation Processing Elements. Choices: [1,2,4,8,16,32]
-    - `PIXELS_PER_READ := XYZ` - represents the port width. Choices: [32,64,128]
+    - `DIMENSION := ...` - represents the image resolution DIMENSION x DIMENSION, 512 for the paper
+    - `HIST_PE := ...` - Histogram Processing elements for Mutual Information. Choices = [1,2,4,8,16]
+    - `EPE_PE := ...` - Histogram Processing elements for Mutual Information. Choices = [1,2,4,8,16]
+    - `INT_PE := ...` - Number of Interpolation Processing Elements. Choices: [1,2,4,8,16,32]
+    - `PIXELS_PER_READ := ...` - represents the port width. Choices: [32,64,128]
 
-4. Prepare the folder to be moved on the deploy machine. (default name is `hw_build`)
+4. Prepare the folder to be moved on the deploy machine (default name is `hw_build`).
     ```bash
     make build_and_pack TARGET=hw TASK=[TX|STEP] NAME=[NAME=<name>]
     ```
-5. Move the generated folder, `build/NAME` (i.e. `cd build/hw_build`), on the deploy machine
-6. Perform steps 7 and 8 from [Case 1](#case-1-using-given-bitstreams-for-image-transformation-or-image-registration-step) on the deply machine, to generate the dataset and run.
-----
+5. Move the generated folder, `build/NAME` (i.e. `cd build/hw_build`), to the deploy machine.
+6. Follow the instructions in the [next section](#running) to run the application on the deploy machine.
+
+## Running
+***Note: the following operations must be performed on the deploy machine (where the `build/NAME` folder has been moved).***
+
+1. Generate the dataset with `./generate_dataset.sh [dim] [depth]`
+    ```bash
+    ./generate_dataset.sh 512 246
+    ```
+2. Source XRT
+    ```bash
+    source <YOUR_PATH_TO_XRT>/setup.sh
+    ```
+3. Run the application with `./host_overlay.exe [depth] [x] [y] [ang_degrees] [num_runs]`
+    ```bash
+    ./host_overlay.exe 512 18.54 -12.31 20.0 1
+    ```
 
 ## Complete image registration application 
-<!-- ### Option A. Using pre-generated bitstream
 
-1. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
-    ```bash
-    make build_app
-    ```
-2. Move the CT volume in `3DIRG_application/PET_small/png` and the PET volume in `3DIRG_application/CT_small/png`
-3. Prepare the folder. (default name is `hw_build`)
-    ```bash
-    make pack_app [NAME=<name>]
-    ```
-    *Note 1:* The commands prepare a folder copying dataset volumes from `3DIRG_application/CT_small/png` and `3DIRG_application/PET_small/png`. Therefore, images must be there before using this command. 
-
-    *Note 2:* This command would copy a newly generated bitstream. To use the premade one, you need to manually copy it in the generated folder.
-4. Move the folder on the deploy machine
-5. Execute the application: 
-    ```bash
-    ./exec.sh 
-    ```
-### Option B. Preparing bitstream and build the application -->
-
-1. Follow CASE 1, selecting STEP as TASK
+1. Build the single registration step (**STEP**) by following the [building](#building) instructions and selecting `TASK=STEP`.
 2. Compile the software application. We remind the hard requirements of OpenCV 3.0.0 installed and statically compiled.
     ```bash
     make build_app
     ```
-3. Move the CT volume in `3DIRG_application/PET_small/png` and the PET volume in `3DIRG_application/CT_small/png`
-4. Prepare the folder. (default name is `hw_build`)
+3. If available, move the CT volume in `3DIRG_application/PET_small/png` and the PET volume in `3DIRG_application/CT_small/png`. Alternatively, skip this step: a different dataset can be generated later on the deploy machine.
+4. Prepare the folder (default name is `hw_build`).
     ```bash
     make pack_app [NAME=<name>]
     ```
-*Note 1:* That the commands prepare a folder copying dataset volumes from `3DIRG_application/CT_small/png` and `3DIRG_application/PET_small/png`. Therefore, images must be there before using this command. 
-
+5. Move the generated folder, `build/NAME` (i.e. `cd build/hw_build`), to the deploy machine.
+6. If necessary, generate the dataset.
+    ```bash
+    ./generate_dataset.sh
+    ```
 5. Execute the application: 
     ```bash
     ./exec.sh 
