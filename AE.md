@@ -38,9 +38,7 @@ The folder `bitstreams/` contains the bitstreams used for the evaluation. If, fo
 ### Figure 6. Geometric transformation IPE scaling
 ***Note: the following operations must be performed on the deploy machine (where the `build/` folder has been moved).***
 
-***TODO add brief description of the plot (?)*** 
-
-The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the geometric transformation are placed in the `build/` folder. The folder contains multiple subfolders, each corresponding to a different number of IPEs. Such folders are:
+In figure 6, we evaluate how scaling the number of IPEs (1, 2, 4, 8, 16 and 32) impacts execution time for the geometric transformation with interpolation, for different depths (32, 64, 128, 256 and 512). The builds for this experiment are placed in subfolders under the `build/` folder, named `onlyTX_XXIPE`, where `XX` is the number of IPEs. The needed builds are the following:
 - `build/onlyTX_01IPE`
 - `build/onlyTX_02IPE`
 - `build/onlyTX_04IPE`
@@ -48,13 +46,16 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 - `build/onlyTX_16IPE`
 - `build/onlyTX_32IPE`
 
-1. Source XRT
+#### Flow
+
+1. Move into `build/` and source XRT:
     ```bash
+    cd build
     source <YOUR_PATH_TO_XRT>/setup.sh
     ```
-2. For each configuration, enter the respective folder. E.g.
+2. For each configuration, enter its respective folder under `build/`. E.g.
     ```bash
-    cd build/onlyTX_01IPE
+    cd onlyTX_01IPE
     ```
 3. Run the tests for the different depths (32, 64, 128, 256 and 512) by executing the following command:
     ```bash
@@ -78,25 +79,28 @@ The builds for testing the scaling of the IPEs (1, 2, 4, 8, 16 and 32) for the g
 
 In figure 7, we compare the execution times of the transformation only (`build/onlyTX_32IPE`), single registration step (`build/STEP_32IPE`) and complete registration application (`build/3DIR_Application`) against the state of the art.
 
-1. Source XRT
+#### Flow
+
+1. Move into `build/` if you haven't done it before, and source XRT:
     ```bash
+    cd build
     source <YOUR_PATH_TO_XRT>/setup.sh
     ```
-2. If you have already run the configurations for Figure 6, you can skip running `build/onlyTX_32IPE`. Otherwise, enter the folder and run the tests:
+2. If you have already run the configurations for Figure 6, configuration `onlyTX_32IPE` has already been ru and you can skip to the next step. Otherwise, enter the folder and run the tests:
     ```bash
-    cd build/onlyTX_32IPE
+    cd onlyTX_32IPE
     ./run_for_SoA_comparison.sh
-    cd -
+    cd ..
     ```
 3. For the single registration step, enter the respective folder and run the tests:
     ```bash
-    cd build/STEP_32IPE
+    cd STEP_32IPE
     ./run_for_SoA_comparison.sh
-    cd -
+    cd ..
     ```
 4. Finally, run the complete registration application:
     ```bash
-    cd build/3DIR_Application
+    cd 3DIR_Application
     ./exec.sh
     ```
     ***Note: to get a proper dataset contact the authors privately. Alternatively, run*** `./generate_dataset.sh`
@@ -112,14 +116,13 @@ In figure 7, we compare the execution times of the transformation only (`build/o
     ```
 
 ### Figure 8. Registration accuracy
+***Note: the following operations must be performed on the deploy machine (where the `build/` folder has been moved).***
 
 This figure evaluate the registration correctness upon the whole 3D image registration step, to align a transformed floating volume with respect to a reference. 
 
 The paper_fig/figure8/data already contains all the material for reproducing the figure. 
 Alternatively, the images in data folder needs to be re-created.
 In this latter case, please contact us and we will **privately** send you the dataset.
-
-Note: build/figure8steps contains 2 different builds. One is a simple transformation step, to apply deformation. The other is for 3D image registration application
 
 #### Option 1: Use provided data
 
@@ -129,21 +132,21 @@ python3 figure8.py
 ```
 #### Option 2: Reproduce all the images from scratch
 
-1. Source XRT
+1. Move into `build/` if you haven't done it before, and source XRT:
     ```bash
+    cd build
     source <YOUR_PATH_TO_XRT>/setup.sh
     ```
 2. Apply a deformation to the floating volume:
     ```bash
-    cd build
     ./generate_distortion.sh 246 10 10 10
     ```
-3. Now, apply the 3D image registration step:
+3. Now, apply the 3D image registration step using the distorted volume as floating volume:
     ```bash
     cd 3DIRG_Application
     ./exec.sh ../onlyTX_32IPE/dataset_output/
-    cd -
-4. To plot this figure, the original image, the distorted image and the registered image need to be copied into `paper_fig/figure8/data/`. To do so, launch the following command in the `build/` folder:
+    cd ..
+4. To plot this figure, the first slice from the original volume, from the distorted one and from the registered one, need to be copied into `paper_fig/figure8/data/`. To do so, launch the following command in the `build/` folder:
     ```bash
     ./gather_images_fig8.sh
     ```
