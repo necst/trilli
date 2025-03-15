@@ -167,7 +167,7 @@ int main(int argc, char ** argv)
     auto ct_path = std::string(argv[1]);
     auto pet_pat = std::string(argv[2]);
     std::ofstream out_file;
-    out_file.open("TRILLI_pow.csv",std::ios::app);
+    out_file.open("TRILLI_pow.csv",std::ios::out);
     out_file << "execTime,withPCIE_time" << std::endl;
     if (board.read_volumes_from_file(ct_path, pet_pat) == -1)
         return -1;

@@ -130,10 +130,10 @@ int main(int argc, char *argv[]) {
     std::ofstream outfile;
     // set the filename as time_IPEX_DYY_NXX.csv where X is the Number of IPE, YY is the image resolution (DIMENSION) and XX is the given n_couples
     std::string filename = "time_IPE" + std::to_string(INT_PE) + "_D" + std::to_string(DIMENSION) + "_N" + std::to_string(n_couples)+".csv";
-    outfile.open(filename, std::ios_base::app); // append instead of overwrite
+    outfile.open(filename, std::ios_base::out); // append instead of overwrite
     outfile << "exec_time,write_time,read_time"<< std::endl;
     std::ofstream outfile_sw;
-    outfile_sw.open("time_sw.csv", std::ios_base::app); // append instead of overwrite
+    outfile_sw.open("time_sw.csv", std::ios_base::out); // append instead of overwrite
     outfile_sw << "time,"<< std::endl;
 
     double duration_sw_sec = 0;
@@ -199,11 +199,9 @@ int main(int argc, char *argv[]) {
     std::cout << bold_on << "Speedup: " << speedup << bold_off << std::endl << std::endl;
 
     #ifndef ONLYTX
-    if(((data_t)mutualinfo - output_data > 0.0001)){
-        float absolute_error = abs((float)mutualinfo - output_data);
-        float relative_error = 100.f * absolute_error / (float)mutualinfo;
-        std::cout << "Error: " << std::scientific << absolute_error << " (" << std::scientific << relative_error << "%)" << std::endl;
-    }
+    float absolute_error = abs((float)mutualinfo - output_data);
+    float relative_error = 100.f * absolute_error / (float)mutualinfo;
+    std::cout << "Error: " << std::scientific << absolute_error << " (" << std::scientific << relative_error << "%)" << std::endl;
     #endif
 
     return 0;
