@@ -135,6 +135,8 @@ In figure 7, we compare the execution times of the transformation only (`build/o
     python3 figure7.py
     ```
 
+----
+
 ### Figure 8. Registration accuracy
 ***Note: the following operations must be performed on the deploy machine (where the `build/` folder has been moved).***
 
