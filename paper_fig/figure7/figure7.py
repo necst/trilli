@@ -29,12 +29,23 @@ import pandas as pd
 import seaborn as sns
 import warnings
 import argparse
+import subprocess
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+def is_tex_installed():
+    try:
+        subprocess.run(["latex", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        subprocess.run(["dvipng", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return True
+    except Exception:
+        return False
+    
+usetex_value = is_tex_installed()
 plt.rcdefaults()
 
 plt.rcParams.update({
-    "text.usetex": True,
+    "text.usetex": usetex_value,
     "font.family": "serif",
     "font.serif": ["Palatino"],
 })
@@ -53,10 +64,13 @@ scale_points=1.75
 # Set up argument parsing
 parser = argparse.ArgumentParser(description="Process TRILLI file paths.")
 
-parser.add_argument("--trilli_tx", type=str, default="./csv/TRILLI_32_IPE.csv",
+parser.add_argument("--trilli_tx", type=str, default="./csv/TRILLI_32IPE_TX.csv",
                     help="Path to TRILLI_TX file (default: ./csv/TRILLI_32_IPE.csv)")
 
-parser.add_argument("--trilli_3dir", type=str, default="./csv/TRILLi_pow.csv",
+parser.add_argument("--trilli_step", type=str, default="./csv/TRILLI_32IPE_STEP.csv",
+                    help="Path to TRILLI_TX file (default: ./csv/TRILLI_32_IPE.csv)")
+
+parser.add_argument("--trilli_3dir", type=str, default="./csv/TRILLI_pow.csv",
                     help="Path to TRILLI_POW file (default: ./csv/TRILLi_pow.csv)")
 
 # Parse the arguments
@@ -65,6 +79,7 @@ args = parser.parse_args()
 # Assign variables
 TRILLI_TX = args.trilli_tx
 TRILLI_POW = args.trilli_3dir
+TRILLI_STEP = args.trilli_step
 
 
 
@@ -149,7 +164,7 @@ data_RTX = pd.read_csv("./csv/RTX4050_output_bilinear_512.csv")
 df_RTX = pd.DataFrame(data_RTX, columns=["tot", "tx", "mi"])
 df_RTX = df_RTX.rename(columns={"tot": "Time"})
 
-data_VCK= pd.read_csv(TRILLI_TX)
+data_VCK= pd.read_csv(TRILLI_STEP)
 df_VCK = pd.DataFrame(data_VCK, columns=["exec_time", "write_time", "read_time"])
 df_VCK = df_VCK.rename(columns={"exec_time": "Time"})
 
@@ -266,18 +281,32 @@ fig, axs = plt.subplots(1, 3, figsize=(24, 4))
 
 custom_palette_legends = ["#b35806", "#e08214", "#fdb863", "#b2abd2", "#8073ac", 
                           "#b30000", "#d7301f", "#ef6548", "#fc8d59", "#1a9850"]
-config_names_legends = [
-    r"\parbox[c]{4cm}{\centering ITK\_O3\\Intel U755H}",
-    r"\parbox[c]{4cm}{\centering \textsc{matlab}\\Intel U755H}",
-    r"\parbox[c]{4cm}{\centering SimpleITK\\Intel i7-4770}",
-    r"\parbox[c]{4cm}{\centering VitisLib\\Versal VCK5000}",
-    r"\parbox[c]{4cm}{\centering HEPHAESTUS\\Alveo U280}",
-    r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A5000}",
-    r"\parbox[c]{4cm}{\centering ATHENA\\NVIDIA V100}",
-    r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A100}",
-    r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA RTX4050}",
-    r"\parbox[c]{4cm}{\centering TRILLi\\Versal VCK5000}"
-]
+if usetex_value:
+        config_names_legends = [
+        r"\parbox[c]{4cm}{\centering ITK\_O3\\Intel U755H}",
+        r"\parbox[c]{4cm}{\centering \textsc{matlab}\\Intel U755H}",
+        r"\parbox[c]{4cm}{\centering SimpleITK\\Intel i7-4770}",
+        r"\parbox[c]{4cm}{\centering VitisLib\\Versal VCK5000}",
+        r"\parbox[c]{4cm}{\centering HEPHAESTUS\\Alveo U280}",
+        r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A5000}",
+        r"\parbox[c]{4cm}{\centering ATHENA\\NVIDIA V100}",
+        r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A100}",
+        r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA RTX4050}",
+        r"\parbox[c]{4cm}{\centering TRILLi\\Versal VCK5000}"
+        ]
+else:
+     config_names_legends = [
+        "ITK\_O3 Intel U755H",
+        "Matlab Intel U755H",
+        "SimpleITK Intel i7-4770",
+        "VitisLib Versal VCK5000",
+        "Hephaestus Alveo U280",
+        "Kornia (a) \n ATHENA (b-c) NVIDIA A5000",
+        "ATHENA NVIDIA V100",
+        "Kornia (a) \n ATHENA (b-c) NVIDIA A100",
+        "Kornia (a) \n ATHENA (b-c) NVIDIA RTX4050",
+        "TRILLi\n Versal VCK5000"
+        ]
 ax1 = sns.barplot(x="Config", y="Time", data=df_tot, palette=custom_palette_1,edgecolor="black", ax=axs[0])
 
 ax2 = sns.barplot(x="Config", y="Time", data=df_tot_2, palette=custom_palette_2,edgecolor="black", ax=axs[1])
@@ -333,16 +362,28 @@ color7 = plt.Rectangle((0, 0), 3, 2, fc="#d7301f", edgecolor = 'black', hatch='.
 color8 = plt.Rectangle((0, 0), 3, 2, fc="#ef6548", edgecolor = 'black', hatch='.')
 color9 = plt.Rectangle((0, 0), 3, 2, fc="#fc8d59", edgecolor = 'black', hatch='.')
 color10 =plt.Rectangle((0, 0), 3, 2, fc="#1a9850", edgecolor = 'black', hatch='')
-label1 = r"\parbox[c]{4cm}{\centering ITK\_O3\\Intel U755H}"
-label2 = r"\parbox[c]{4cm}{\centering \textsc{matlab}\\Intel U755H}"
-label3 = r"\parbox[c]{4cm}{\centering SimpleITK\\Intel i7-4770}"
-label4 = r"\parbox[c]{5cm}{\centering Kornia CPU (a) - \\ HEPHAESTUS (b-c) Alveo U280}"
-label5 = r"\parbox[c]{4cm}{\centering VitisLib\\Versal VCK5000}"
-label6 = r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A5000}"
-label7 = r"\parbox[c]{4cm}{\centering ATHENA\\NVIDIA V100}"
-label8 = r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A100}"
-label9 = r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA RTX4050}"
-label10 = r"\parbox[c]{4cm}{\centering TRILLI\\Versal VCK5000}"
+if usetex_value:
+        label1 = r"\parbox[c]{4cm}{\centering ITK\_O3\\Intel U755H}"
+        label2 = r"\parbox[c]{4cm}{\centering \textsc{matlab}\\Intel U755H}"
+        label3 = r"\parbox[c]{4cm}{\centering SimpleITK\\Intel i7-4770}"
+        label4 = r"\parbox[c]{5cm}{\centering Kornia CPU (a) - \\ HEPHAESTUS (b-c) Alveo U280}"
+        label5 = r"\parbox[c]{4cm}{\centering VitisLib\\Versal VCK5000}"
+        label6 = r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A5000}"
+        label7 = r"\parbox[c]{4cm}{\centering ATHENA\\NVIDIA V100}"
+        label8 = r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA A100}"
+        label9 = r"\parbox[c]{4cm}{\centering Kornia (a) - ATHENA (b-c) NVIDIA RTX4050}"
+        label10 = r"\parbox[c]{4cm}{\centering TRILLI\\Versal VCK5000}"
+else:
+        label1 = "    ITK_O3 \n Intel U755H"
+        label2 = "   Matlab \n Intel U755H"
+        label3 = " SimpleITK\nIntel i7-4770"
+        label4 = "   Kornia CPU (a)\nHEPHAESTUS (b-c)\n     Alveo U280"
+        label5 = "       VitisLib\nVersal VCK5000"
+        label6 = "       Kornia (a)\nATHENA (b-c) A5000"
+        label7 = " ATHENA\n   V100"
+        label8 = "     Kornia (a)\n  ATHENA (b-c)\n        A100"
+        label9 = "      Kornia (a)\n   ATHENA (b-c)\n      RTX4050"
+        label10 = "        TRILLI\n Versal VCK5000"
 handleL = 4
 fig.legend([color1], [empty_label], loc='upper center', bbox_to_anchor=(0.11, 1.17), 
         ncol=1, title="", fancybox=False, frameon=False, shadow=False, fontsize=14, 

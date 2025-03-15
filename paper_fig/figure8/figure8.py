@@ -25,10 +25,21 @@ SOFTWARE.
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import subprocess
+
+def is_tex_installed():
+    try:
+        subprocess.run(["latex", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        subprocess.run(["dvipng", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return True
+    except Exception:
+        return False
+    
+usetex_value = is_tex_installed()
 
 plt.rcdefaults()
 plt.rcParams.update({
-    "text.usetex": True,
+    "text.usetex": usetex_value,
     "font.family": "serif",
     "font.serif": ["Palatino"],
 })
