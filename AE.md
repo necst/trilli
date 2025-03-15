@@ -76,11 +76,12 @@ In figure 6, we evaluate how scaling the number of IPEs (1, 2, 4, 8, 16 and 32) 
     ```bash
     cd onlyTX_01IPE
     ```
-3. Run the tests for the different depths (32, 64, 128, 256 and 512) by executing the following command:
+3. Run the experiment:
     ```bash
     ./run_scaling_depth.sh
     ```
-4. Each folder will contain 5 csv files, one for each depth. For plotting, the csv files need to be copied into `paper_fig/figure6/csv/`. To do so, launch the following command in the `build/` folder:
+    This will run the transformation for each depth (32, 64, 128, 256 and 512) and store the execution times in 5 different csv files.
+4. After all configurations have been run, each folder will contain 5 csv files, one for each depth. For plotting, the csv files need to be copied into `paper_fig/figure6/csv/`. To do so, launch the following command in the `build/` folder:
     ```bash
     cd ..
     ./gather_results_fig6.sh
