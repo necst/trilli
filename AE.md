@@ -2,11 +2,20 @@
 
 ## Abstract
 
-***TODO write abstract***
-
+3D rigid image registration is a pivotal procedure in computer vision that aligns a floating volume with a reference one to correct positional and rotational distortions. It serves either as a stand-alone process or as a pre-processing step for non-rigid registration, where the rigid part dominates the computational cost. Various hardware accelerators have been proposed to optimize its compute-intensive components: geometric transformation with interpolation and similarity metric computation. However, existing solutions fail to address both components effectively, as GPUs excel at image transformation, while FPGAs in similarity metric computation. To close this gap, we propose TRILLI, a novel Versal-based accelerator for image transformation and interpolation. TRILLI optimally maps each computational step on the proper heterogeneous hardware component. TRILLI achieves between 5.32× and 36.75× speedup and between 10.04× and 104.60× energy efficiency improvement for image transformation and interpolation against the top hardware accelerated solutions. Moreover, we integrate it with an FPGA-based similarity metric from literature to complete a rigid image registration step (i.e., transformation, interpolation, and similarity metric) attaining between 18.60× and 74.04× speedup and between 36.11× and 117.65× energy efficiency improvement over the top-performing hardware-accelerated solutions.
 ## Requirements
 
-***TODO write info about sw and hw dependencies***
+***Software Dependencies***
+- *Vitis 2022.1 & Vivado 2022.1*: To build the different designs
+- *XRT 2022.1*:  To target the accelerator
+- *OpenCV-3.0.0 - Static Library*: To load and store images
+- *Python 3.8*
+- *GCC 7.3.1*
+
+***Hardware Dependencies***
+- *Versal VCK5000 - XDMA2022.1* 
+. *PCIe 3.0* 
+- *Intel I7-4470*: Other CPUs may work as well, but currently untested.
 
 ## Testing
 
