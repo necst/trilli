@@ -177,3 +177,12 @@ python3 figure8.py
     cd paper_fig/figure8/
     python3 figure8.py
     ```
+
+# State of The Art References 
+We provide direct support to reproduce most of the employed state-of-the-art solutions. Some code-bases can be found int *trilli/soa/*. Please refer to the readme of each solution for further information about how to run.
+
+- **[Hephaestus](https://dl.acm.org/doi/10.1145/3607928)** - Mutual Information & CPU-FPGA 3D image registration 
+- **[Athena](https://doi.org/10.1109/BioCAS58349.2023.10388589)** - GPU-based 3D image registration
+- **[Vitis Libraries](https://github.com/Xilinx/Vitis_Libraries/tree/2022.1)** - WarpAffine3D kernel for image transformation
+- **[ITK](https://github.com/InsightSoftwareConsortium/ITK/)** powell-based 3D image registration
+- **[SimpleITK](https://github.com/SimpleITK/SimpleITK)** powell-based 3D image registration
