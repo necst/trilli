@@ -62,8 +62,7 @@ import torch
 
 compute_metric = None
 precompute_metric = None
-#device = "cpu"
-device = "cuda:0"
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ref_vals = None
 move_data = None
 hist_dim = 256

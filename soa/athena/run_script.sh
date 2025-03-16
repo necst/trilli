@@ -58,7 +58,7 @@ DATASET_FLDR=./
 CT_PATH=Dataset/SE0
 PET_PATH=Dataset/SE4
 GOLDEN_PATH=Dataset/ST0/NuovoGold
-RES_PATH=output/OutputClassicMoments
+RES_PATH=output/completeReg
 
 metric=(MI)
 dev=(cuda:0)

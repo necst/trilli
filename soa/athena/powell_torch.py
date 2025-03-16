@@ -62,11 +62,9 @@ import torch
 
 compute_metric = None
 precompute_metric = None
-device = "cuda:0"
-#device = "cpu"
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ref_vals = None
 move_data = None
-#torch.cuda.empty_cache()
 def no_transfer(input_data):
     return input_data
 
@@ -580,7 +578,6 @@ def main():
 
     compute_wrapper(args, num_threads)
         
-    #print("Faber Powell python is at the end :)")
 
 
 
