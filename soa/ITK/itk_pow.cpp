@@ -1,4 +1,3 @@
-
 #include "itkImageRegistrationMethodv4.h"
 #include "itkEuler3DTransform.h"
 #include "itkJointHistogramMutualInformationImageToImageMetricv4.h"
@@ -53,8 +52,6 @@ RotationAngles getRotationAnglesFromMatrix(const itk::Matrix<double, 3, 3>& rota
     return angles;
 }
 
-
-
 class CommandIterationUpdate : public itk::Command
 {
 public:
@@ -96,8 +93,6 @@ private:
   double m_LastMetricValue;
 };
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////77
 int main(int argc, char * argv[])
 {
     if (argc < 4)
@@ -177,27 +172,33 @@ int main(int argc, char * argv[])
     registration->SetMovingImage(movingImage);
     std::cout << "Metric Set Finished, now setting transform" << std::endl;
 
-
     std::cout << "Compute Transform Centers" << std::endl;
     std::cout << "Initialize Transform With Moments" << std::endl;
+    
     using TransformInitializerType = itk::CenteredTransformInitializer<itk::Euler3DTransform<double>, FixedImageType, MovingImageType>;
     auto initializer = TransformInitializerType::New();
     initializer->SetTransform(transform);
     initializer->SetFixedImage(fixedImage);
     initializer->SetMovingImage(movingImage);
-    initializer->MomentsOn();
+    initializer->MomentsOn();  
     initializer->InitializeTransform();
+    
     TransformType::MatrixType matrix = transform->GetMatrix();
     TransformType::OffsetType offset = transform->GetOffset();
+    
+    offset[2] = 0;  // Set Z translation to 0
+    
+    transform->SetOffset(offset);
+    
     std::cout << "Matrix = " << std::endl << matrix << std::endl;
     std::cout << "Offset = " << std::endl << offset << std::endl;
+    
     registration->SetInitialTransform(transform);
 
-
-    optimizer->SetStepLength(argc > 5 ? std::stod(argv[5]) : 0.001);
+    optimizer->SetStepLength(argc > 5 ? std::stod(argv[5]) : 0.005);
     optimizer->SetStepTolerance(argc > 6 ? std::stod(argv[6]) : 0.001);
     optimizer->SetValueTolerance(argc > 7 ? std::stod(argv[7]) : 0.001);
-    optimizer->SetMaximumIteration(argc > 8 ? std::stoi(argv[8]) : 100);
+    optimizer->SetMaximumIteration(argc > 8 ? std::stoi(argv[8]) : 200);
     optimizer->SetMetric(metric);
     constexpr unsigned int numberOfLevels = 1;
     using ScalesEstimatorType = itk::RegistrationParameterScalesFromPhysicalShift<MetricType>;
@@ -224,7 +225,7 @@ int main(int argc, char * argv[])
     registration->SetSmoothingSigmasPerLevel(smoothingSigmasPerLevel);
     registration->SetShrinkFactorsPerLevel(shrinkFactorsPerLevel);
 
-try
+    try
     {
     std::cout << "Starting registration" << std::endl;  
     auto start = std::chrono::high_resolution_clock::now();
@@ -255,35 +256,4 @@ try
     TransformType::OffsetType offset2 = finalTransform->GetOffset();
     auto angles = getRotationAnglesFromMatrix(matrix2);
 
-    using ResampleFilterType = itk::ResampleImageFilter<MovingImageType, FixedImageType>;
-    auto resampler = ResampleFilterType::New();
-    resampler->SetInput(movingImage);          
-    resampler->SetSize(fixedImage->GetLargestPossibleRegion().GetSize());  
-    resampler->SetOutputSpacing(fixedImage->GetSpacing());               
-    resampler->SetOutputOrigin(fixedImage->GetOrigin());                 
-    resampler->SetSize(fixedImage->GetLargestPossibleRegion().GetSize()); 
-    
-    resampler->SetTransform(finalTransform); 
-    std::cout << "Final Transform: " << std::endl;
-    std::cout << "Center: " << centerX << " " << centerY << " " << centerZ << std::endl;
-
-    auto interpolator = itk::LinearInterpolateImageFunction<MovingImageType, double>::New();
-    resampler->SetInterpolator(interpolator);
-    
-    typename MovingImageType::Pointer outputImage = resampler->GetOutput();
-
-    std::chrono::duration<double> elapsed_resample = std::chrono::high_resolution_clock::now() - start;
-    std::ofstream file;
-    file.open("itk_times.csv", std::ios_base::app);
-    file << elapsed.count() << "," << elapsed_resample.count() << std::endl;
-    file.close();
-
-    RescaleAndWriteImages<MovingImageType, OutputImageType, OutputImageType2D>(outputImage, argv[3], "outputImage");
-    return EXIT_SUCCESS;
-    }catch (itk::ExceptionObject & ex)
-      {
-        std::cerr << "Exception caught during registration: " << ex << std::endl;
-        return EXIT_FAILURE;
-      }
-
-}
+    using ResampleFilterType = itk::ResampleImageFilter<MovingIm

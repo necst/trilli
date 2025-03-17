@@ -105,15 +105,6 @@ void ReadImageSeriesPNG(const std::string& directory, typename ImageType::Pointe
     std::cout << "Image direction: " << image->GetDirection() << std::endl;
 }
 
-
-/*
-Problema: in TUTTI gli esempi di ITK, i parametri del resample vengono dal Fixed. Se però 
-faccio venire quei parametri dal Moving, il risultato è più simile a quello corretto, perchè 
-trasforma tutte le immagini con la stessa trasformazione. Quindi, probabilmente, va lasciato Fixed
-e va capito il vero motivo, per cui non va.
-
-Aggiustando lo spacing all'inizio della registrazione, questo non è più un problema
-*/
 template <typename MovingImageType, typename FixedImageType, typename TransformType>
 typename MovingImageType::Pointer ResampleImage(typename MovingImageType::Pointer movingImage,
                                                typename FixedImageType::Pointer fixedImage,
