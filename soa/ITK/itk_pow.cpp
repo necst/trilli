@@ -193,15 +193,14 @@ int main(int argc, char * argv[])
     std::cout << "Offset = " << std::endl << offset << std::endl;
     registration->SetInitialTransform(transform);
 
-    // Setto i parametri dell'ottimizzatore
-    // Parametri Accettabili: 0.0005, 0.00001, 0.00005, 100
-    optimizer->SetStepLength(argc > 5 ? std::stod(argv[5]) : 0.0005);
+
+    optimizer->SetStepLength(argc > 5 ? std::stod(argv[5]) : 0.001);
     optimizer->SetStepTolerance(argc > 6 ? std::stod(argv[6]) : 0.001);
-    optimizer->SetValueTolerance(argc > 7 ? std::stod(argv[7]) : 0.000005);
+    optimizer->SetValueTolerance(argc > 7 ? std::stod(argv[7]) : 0.001);
     optimizer->SetMaximumIteration(argc > 8 ? std::stoi(argv[8]) : 100);
     optimizer->SetMetric(metric);
     constexpr unsigned int numberOfLevels = 1;
-    using ScalesEstimatorType = itk::RegistrationParameterScalesFromPhysicalShift<MetricType>; // Come SImpleITK
+    using ScalesEstimatorType = itk::RegistrationParameterScalesFromPhysicalShift<MetricType>;
     ScalesEstimatorType::Pointer scalesEstimator = ScalesEstimatorType::New();
     scalesEstimator->SetMetric(metric);
     scalesEstimator->SetTransformForward(true); 
@@ -256,7 +255,23 @@ try
     TransformType::OffsetType offset2 = finalTransform->GetOffset();
     auto angles = getRotationAnglesFromMatrix(matrix2);
 
-    auto outputImage = ResampleImage<MovingImageType, FixedImageType, TransformType>(movingImage, fixedImage, finalTransform);
+    using ResampleFilterType = itk::ResampleImageFilter<MovingImageType, FixedImageType>;
+    auto resampler = ResampleFilterType::New();
+    resampler->SetInput(movingImage);          
+    resampler->SetSize(fixedImage->GetLargestPossibleRegion().GetSize());  
+    resampler->SetOutputSpacing(fixedImage->GetSpacing());               
+    resampler->SetOutputOrigin(fixedImage->GetOrigin());                 
+    resampler->SetSize(fixedImage->GetLargestPossibleRegion().GetSize()); 
+    
+    resampler->SetTransform(finalTransform); 
+    std::cout << "Final Transform: " << std::endl;
+    std::cout << "Center: " << centerX << " " << centerY << " " << centerZ << std::endl;
+
+    auto interpolator = itk::LinearInterpolateImageFunction<MovingImageType, double>::New();
+    resampler->SetInterpolator(interpolator);
+    
+    typename MovingImageType::Pointer outputImage = resampler->GetOutput();
+
     std::chrono::duration<double> elapsed_resample = std::chrono::high_resolution_clock::now() - start;
     std::ofstream file;
     file.open("itk_times.csv", std::ios_base::app);
