@@ -195,9 +195,9 @@ int main(int argc, char * argv[])
     
     registration->SetInitialTransform(transform);
 
-    optimizer->SetStepLength(argc > 5 ? std::stod(argv[5]) : 0.005);
-    optimizer->SetStepTolerance(argc > 6 ? std::stod(argv[6]) : 0.001);
-    optimizer->SetValueTolerance(argc > 7 ? std::stod(argv[7]) : 0.001);
+    optimizer->SetStepLength(argc > 5 ? std::stod(argv[5]) : 0.0005);
+    optimizer->SetStepTolerance(argc > 6 ? std::stod(argv[6]) : 0.0005);
+    optimizer->SetValueTolerance(argc > 7 ? std::stod(argv[7]) : 0.00001);
     optimizer->SetMaximumIteration(argc > 8 ? std::stoi(argv[8]) : 200);
     optimizer->SetMetric(metric);
     constexpr unsigned int numberOfLevels = 1;
@@ -256,4 +256,33 @@ int main(int argc, char * argv[])
     TransformType::OffsetType offset2 = finalTransform->GetOffset();
     auto angles = getRotationAnglesFromMatrix(matrix2);
 
-    using ResampleFilterType = itk::ResampleImageFilter<MovingIm
+    using ResampleFilterType = itk::ResampleImageFilter<MovingImageType, FixedImageType>;
+    auto resampler = ResampleFilterType::New();
+    resampler->SetInput(movingImage);          
+    resampler->SetSize(fixedImage->GetLargestPossibleRegion().GetSize());  
+    resampler->SetOutputSpacing(fixedImage->GetSpacing());               
+    resampler->SetOutputOrigin(fixedImage->GetOrigin());                 
+    resampler->SetSize(fixedImage->GetLargestPossibleRegion().GetSize()); 
+    
+    resampler->SetTransform(finalTransform); 
+
+    auto interpolator = itk::LinearInterpolateImageFunction<MovingImageType, double>::New();
+    resampler->SetInterpolator(interpolator);
+    
+    typename MovingImageType::Pointer outputImage = resampler->GetOutput();
+
+    std::chrono::duration<double> elapsed_resample = std::chrono::high_resolution_clock::now() - start;
+    std::ofstream file;
+    file.open("itk_times.csv", std::ios_base::app);
+    file << elapsed.count() << "," << elapsed_resample.count() << std::endl;
+    file.close();
+
+    RescaleAndWriteImages<MovingImageType, OutputImageType, OutputImageType2D>(outputImage, argv[3], "outputImage");
+    return EXIT_SUCCESS;
+    }catch (itk::ExceptionObject & ex)
+      {
+        std::cerr << "Exception caught during registration: " << ex << std::endl;
+        return EXIT_FAILURE;
+      }
+
+}
