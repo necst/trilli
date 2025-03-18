@@ -178,7 +178,7 @@ python3 figure8.py
     python3 figure8.py
     ```
 
-# State of he Art References 
+# State of the Art References 
 We provide direct support to reproduce most of the employed state-of-the-art solutions. Some code-bases can be found int *trilli/soa/*. Please refer to the readme of each solution for further information about how to run.
 
 - **[Hephaestus](https://dl.acm.org/doi/10.1145/3607928)** - Mutual Information & CPU-FPGA 3D image registration 
