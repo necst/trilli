@@ -11,25 +11,24 @@ Please notice that an exemplifying result is already provided in each paper_fig 
 All these steps are meant to be executed into MATLAB environment, through command line. 
 
 # Step 1: Run Profiler
-```
+```MATLAB
 profile on
 ```
 # Step 2: Run image registration
+```MATLAB
+imageregistration
+```
 
 Run the full image registration
 
 # Step 3: Stop profiler
-```
+```MATLAB
 profile off
 ```
 
-# Step 4: Stop profiler
-```
-profile off
-```
-
-# Step 5: Visualize the Report
-```
+# Step 4: View the Report
+Check function `imwarp` for geometric transformation, and function `imregister` for the complete registration step.
+```MATLAB 
 profile viewer
 ```
 
