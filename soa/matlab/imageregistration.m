@@ -39,7 +39,7 @@ tic
 %Rmoving = imref3d(size(PET),infoPET.PixelSpacing(2),infoPET.PixelSpacing(1),infoPET.SliceThickness);
  
 optimizer.InitialRadius = 0.0001;
-optimizer.MaximumIterations = 200;
+optimizer.MaximumIterations = 1;
 movingRegisteredVolume = imregister(PET, CT, 'similarity', optimizer, metric);
 time=toc;
 disp(toc)
