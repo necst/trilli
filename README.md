@@ -173,7 +173,8 @@ Each folder contains a subfolder with the figure name, and a dedicated readme fo
 - **[SimpleITK](https://github.com/SimpleITK/SimpleITK)** powell-based 3D image registration
 
 ## Paper Results - RAW data
-Here we provide some raw data collected using setups and scripts described in the [artifact evaluation guide](AE.md)
+Here we provide some raw data collected using setups and scripts described in the [artifact evaluation guide](AE.md) , as well as raw data collected
+using the proposed accelerator
 ### Image Transformation
 
 | Platform              | ITK_O3 U755H | Matlab i7-13620H | Kornia i7-4770 | VitisLib VCK500 | Kornia A5000 | Kornia A100 | Kornia RTX4050 | Trilli     |
