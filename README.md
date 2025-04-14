@@ -33,6 +33,8 @@ to iteratively refine transformation parameters based on user-defined settings. 
 ## FCCM25 Artifact Evaluation
 For artifact evaluation, see the [AE.md](./AE.md) file.
 
+Zenodo DOI: https://doi.org/10.5281/zenodo.15211152
+
 <!-- Following we describe three testing flows: 
 
 - Case 1: using the given bitstream to test image transformation and/or image registration step
