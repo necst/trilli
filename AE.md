@@ -20,6 +20,10 @@ The figures that can be reproduced are the following:
 - *OpenCV-3.0.0 - Static Library*: To load and store images
 - *Python 3.8*
 - *GCC 7.3.1*
+- *OS: CentOS Linux release 7.9.2009 (Core)*
+  
+*Note: [NOT TESTED] As we do not use any OS-specific feature, different Linux-based OS versions may work as well.*
+
 
 ***Hardware Dependencies***
 - *Versal VCK5000 - XDMA2022.1* 
