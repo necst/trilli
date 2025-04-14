@@ -110,7 +110,7 @@ Moreover, design parameters can be set in the `default.cfg` file as described in
     *For the rigid step, instead:*
     - `DIMENSION := ...` - represents the image resolution DIMENSION x DIMENSION, 512 for the paper
     - `HIST_PE := ...` - Histogram Processing elements for Mutual Information. Choices = [1,2,4,8,16]
-    - `EPE_PE := ...` - Entropy Processing elements for Mutual Information. Choices = [1,2,4,8,16]
+    - `ENTROPY_PE := ...` - Entropy Processing elements for Mutual Information. Choices = [1,2,4,8,16]
     - `INT_PE := ...` - Number of Interpolation Processing Elements. Choices: [1,2,4,8,16,32]
     - `PIXELS_PER_READ := ...` - represents the port width. Choices: [32,64,128]
 
