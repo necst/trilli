@@ -15,6 +15,9 @@ to iteratively refine transformation parameters based on user-defined settings. 
 - OpenCV 3.0.0 - static library
 - Python 3.8
 - GCC 7.3.1
+- OS: CentOS Linux release 7.9.2009 (Core)
+  
+*Note: [NOT TESTED] As we do not use any OS-specific feature, different Linux-based OS versions may work as well.*
 
 ## Code overview
 - `3DIRG_application/`: complete registration framework
