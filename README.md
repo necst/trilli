@@ -33,7 +33,7 @@ to iteratively refine transformation parameters based on user-defined settings. 
 ## FCCM25 Artifact Evaluation
 For artifact evaluation, see the [AE.md](./AE.md) file.
 
-Zenodo DOI: https://doi.org/10.5281/zenodo.15211152
+Zenodo DOI: https://doi.org/10.5281/zenodo.15211289
 
 <!-- Following we describe three testing flows: 
 
