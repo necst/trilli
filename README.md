@@ -36,6 +36,7 @@ make install
 To add your OpenCV to the PATH through the .bashrc file, modify the .bashrc file as follows:
 ```
 export PKG_CONFIG_PATH=$HOME/local/lib/pkgconfig:$PKG_CONFIG_PATH
+export LD_LIBRARY_PATH=$HOME/local/lib:$LD_LIBRARY_PATH
 ```
 
 Depending on the system, some sub-dependencies may be needed: 
