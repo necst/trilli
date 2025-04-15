@@ -38,6 +38,13 @@ To add your OpenCV to the PATH through the .bashrc file, modify the .bashrc file
 export PKG_CONFIG_PATH=$HOME/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ```
 
+Depending on the system, some sub-dependencies may be needed: 
+```
+sudo apt install build-essential cmake git libgtk-3-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev openexr libatlas-base-dev libopenexr-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev python3-dev python3-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libdc1394-dev gfortran -y
+```
+
+
+
 ## Code overview
 - `3DIRG_application/`: complete registration framework
 - `aie/`: AI Engines source code
