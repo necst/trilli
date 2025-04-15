@@ -19,6 +19,25 @@ to iteratively refine transformation parameters based on user-defined settings. 
   
 *Note: [NOT TESTED] As we do not use any OS-specific feature, different Linux-based OS versions may work as well.*
 
+## OpenCV setup
+To install OpenCV on your machine, use the following commands:
+```
+mkdir ~/opencv_build && cd ~/opencv_build
+git clone https://github.com/opencv/opencv.git
+git clone https://github.com/opencv/opencv_contrib.git
+mkdir -p ~/opencv_build/opencv/build && cd ~/opencv_build/opencv/build
+
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/usr/local -D INSTALL_C_EXAMPLES=ON -D INSTALL_PYTHON_EXAMPLES=ON -D OPENCV_GENERATE_PKGCONFIG=ON -D CMAKE_INSTALL_PREFIX=$HOME/local -D BUILD_EXAMPLES=ON -D OPENCV_EXTRA_MODULES_PATH=~/opencv_build/opencv_contrib/modules ..
+
+make -j
+make install
+```
+
+To add your OpenCV to the PATH through the .bashrc file, modify the .bashrc file as follows:
+```
+export PKG_CONFIG_PATH=$HOME/local/lib/pkgconfig:$PKG_CONFIG_PATH
+```
+
 ## Code overview
 - `3DIRG_application/`: complete registration framework
 - `aie/`: AI Engines source code
