@@ -43,6 +43,7 @@ Depending on the system, some sub-dependencies may be needed:
 sudo apt install build-essential cmake git libgtk-3-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev openexr libatlas-base-dev libopenexr-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev python3-dev python3-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libdc1394-dev gfortran -y
 ```
 
+*NOTE: It may be needed to checkout the correct versions. Please refer to this link for installing instructions: https://learnopencv.com/install-opencv-3-4-4-on-ubuntu-18-04/*
 
 
 ## Code overview
