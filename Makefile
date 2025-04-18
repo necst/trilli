@@ -113,7 +113,7 @@ pack:
 	mkdir -p build/$(NAME)/dataset
 	mkdir -p build/$(NAME)/dataset_output
 	mkdir -p build/$(NAME)/dataset_sw_output
-	rm sw/dataset/*.png
+	rm -f sw/dataset/*.png
 	cp -r sw/dataset/** build/$(NAME)/dataset/
 	cp sw/host_overlay.exe build/$(NAME)/
 	cp $(XCLBIN) build/$(NAME)/overlay_hw.xclbin

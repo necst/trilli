@@ -75,4 +75,3 @@ generate_input_data:
 	$(info - N_COUPLES         $(N_COUPLES))
 	$(info ********************************************************)
 	$(info )
-	printf "$(TX)\n$(TY)\n$(shell echo "scale=6; ${ANG}*${PI}/${HALF_ROT}" | bc)\n$(N_COUPLES)\n" > ./data/params_in.txt
