@@ -174,7 +174,7 @@ python3 figure8.py
     cd ..
 4. To plot this figure, the first slice from the original volume, from the distorted one and from the registered one, need to be copied into `paper_fig/figure8/data/`. To do so, launch the following command in the `build/` folder:
     ```bash
-    ./gather_images_fig8.sh
+    ./gather_results_fig8.sh
     ```
 5. Now it is possible to produce the plot again
     ```bash
