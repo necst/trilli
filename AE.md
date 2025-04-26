@@ -170,7 +170,7 @@ python3 figure8.py
 3. Now, apply the 3D image registration step using the distorted volume as floating volume:
     ```bash
     cd 3DIRG_Application
-    ./exec.sh ../onlyTX_32IPE/dataset_output/
+    ./exec.sh ../STEP_32IPE/dataset_output/
     cd ..
 4. To plot this figure, the first slice from the original volume, from the distorted one and from the registered one, need to be copied into `paper_fig/figure8/data/`. To do so, launch the following command in the `build/` folder:
     ```bash
