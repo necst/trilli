@@ -247,9 +247,9 @@ If you find this repository useful, please use the following citation:
 ```latex
 @inproceedings{sorrentino2025trilli,
     title = {Soaring with TRILLI: an HW/SW Heterogeneous Accelerator for Multi-Modal Image Registration},
-    author = {Giuseppe, Sorrentino and Paolo S., Galfano and Eleonora, D'Arnese and Davide, Conficconi},
+    author = {Sorrentino, Giuseppe and Galfano, Paolo S. and D'Arnese, Eleonora and Conficconi, Davide},
     year = 2025,
     booktitle={2025 IEEE 33rd Annual International Symposium on Field-Programmable Custom Computing Machines (FCCM)},
     organization={IEEE}
- } 
+ }
 ```
