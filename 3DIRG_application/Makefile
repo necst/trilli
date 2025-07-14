@@ -1,76 +1,77 @@
 # MIT License
-
-# Copyright (c) 2025 Giuseppe Sorrentino, Paolo Salvatore Galfano, Davide Conficconi, Eleonora D'Arnese
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# (inserisci qui il tuo header copyright)
 
 #######################################################
-#directory stuffs
+# directory stuffs
 TOP ?= $(shell pwd)
 EXECUTABLE ?= trilli_app
+EXECUTABLE_SW ?= trilli_app_sw
 
 SRC_DIR=$(TOP)/src
 SW_DIR=$(SRC_DIR)/sw
+PYBIND_WRAPPER_DIR=$(TOP)/pybind_wrapper
+BUILD_DIR=$(TOP)/build
 
 #######################################################
+# Compiler and flags
+CC := g++
+CXXFLAGS = -std=c++17 -O2 -fPIC -Wno-deprecated-declarations
 
-#######################################################
-#sw stuffs
-CC:=g++ 
-#Add -DHW_REG to enable the HW registration
+# Paths for HW_REG (se serve)
 INCL_DRVR = -I$(DRVR_DIR) -I$(XILINX_XRT)/include -I$(XILINX_HLS)/include
-CFLAGS=--std=c++17
-CXXFLAGS = -std=c++17 -Wno-deprecated-declarations
-CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_HLS)/include -I$(SW_DIR)/include -I$(SW_DIR)/include/image_utils
-LDFLAGS := -L$(XILINX_XRT)/lib
-LDFLAGS += $(LDFLAGS) -lxrt_coreutil
-LIBS = `pkg-config --libs opencv`
-CFLAGS = `pkg-config --cflags opencv`
+LDFLAGS := -L$(XILINX_XRT)/lib -lxrt_coreutil
 
-OPENCVLIB=`pkg-config --cflags --libs opencv`
-PKG_CONFIG_PATH:='/usr/local/lib64/pkgconfig/':$(PKG_CONFIG_PATH)
-LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):/usr/local/lib64
-core_code := $(wildcard $(SW_DIR)/*.hpp)
-core_code += $(wildcard $(SW_DIR)/*.cpp)
+# OpenCV flags
 
-MAIN_CODE=$(SW_DIR)/main.cpp 
-MAIN_CODE += $(SW_DIR)/include/image_utils/image_utils.cpp
+OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)
+OPENCV_LIBS = $(shell pkg-config --libs opencv4)
+# pybind11 include (per build pybind)
+PYBIND11_INCLUDE = $(shell python3 -m pybind11 --includes)
 
-HOST_SRCS := $(SW_DIR)/main.cpp
-HOST_SRCS += $(SW_DIR)/include/image_utils/image_utils.cpp
-HOST_SRCS += $(SW_DIR)/include/software_mi/software_mi.cpp
+#######################################################
+# Sources for host builds (non-pybind)
+HOST_SRCS := $(SW_DIR)/main.cpp \
+             $(SW_DIR)/include/image_utils/image_utils.cpp \
+             $(SW_DIR)/include/software_mi/software_mi.cpp
+
+#######################################################
+# Sources for pybind module build
+PYBIND_SRCS := $(SW_DIR)/rigid_registration_runner.cpp \
+               $(PYBIND_WRAPPER_DIR)/wrapper.cpp \
+               $(SW_DIR)/include/image_utils/image_utils.cpp
+
+#######################################################
+# Targets
+
+all: build_host
 
 build_host: $(EXECUTABLE)
 $(EXECUTABLE): $(HOST_SRCS)
-	$(CC) -o $(EXECUTABLE) $^ $(CXXFLAGS) -DHW_REG $(LDFLAGS) $(CFLAGS) $(LIBS) -O2
+	$(CC) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(OPENCV_CFLAGS) $(OPENCV_LIBS) -DHW_REG
 
-sw_test:$(MAIN_CODE) $(core_code)
-	@rm -f ./overlay_hw.xclbin
-	@rm -f ./overlay_hw_emu.xclbin
-	@ln -s ../hw/overlay_hw.xclbin
-	@ln -s ../hw/overlay_hw_emu.xclbin
-	$(CC) $(CFLAGS) $(MAIN_CODE) -o $(EXECUTABLE) $(OPENCVLIB)
+build_host_sw: $(EXECUTABLE_SW)
+$(EXECUTABLE_SW): $(HOST_SRCS)
+	$(CC) $(CXXFLAGS) -o $@ $^ $(OPENCV_CFLAGS) $(OPENCV_LIBS)
 
-run_sw_test: sw_test
-	./$(EXECUTABLE) ./CT_small/png/ ./PET_small/png/ ./output/ 246
+build_pybind_sw: $(BUILD_DIR)/trilli_wrapper_sw.so
+
+$(BUILD_DIR)/trilli_wrapper_sw.so: $(PYBIND_SRCS)
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(CXXFLAGS) $(PYBIND11_INCLUDE) -I$(SW_DIR) \
+	$(OPENCV_CFLAGS) -shared -o $@ $^ \
+	$(OPENCV_LIBS)
+
+build_pybind_hw: $(BUILD_DIR)/trilli_wrapper_hw.so
+
+$(BUILD_DIR)/trilli_wrapper_hw.so: $(PYBIND_SRCS)
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(CXXFLAGS) -DHW_REG $(PYBIND11_INCLUDE) -I$(SW_DIR) \
+	$(INCL_DRVR) $(OPENCV_CFLAGS) -shared -o $@ $^ \
+	$(LDFLAGS) $(OPENCV_LIBS)
 
 clean:
-	rm -f $(EXECUTABLE)
-	rm -f ./overlay_hw.xclbin
-	rm -f ./overlay_hw_emu.xclbin
+	rm -f $(EXECUTABLE) $(EXECUTABLE_SW)
+	rm -rf $(BUILD_DIR)
+	rm -f ./overlay_hw.xclbin ./overlay_hw_emu.xclbin
+
+.PHONY: all clean build_host build_host_sw build_pybind
