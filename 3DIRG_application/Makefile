@@ -1,5 +1,4 @@
 # MIT License
-# (inserisci qui il tuo header copyright)
 
 #######################################################
 # directory stuffs
