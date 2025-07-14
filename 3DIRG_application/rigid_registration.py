@@ -6,7 +6,7 @@ sys.path.append("./build")
 
 import trilli_wrapper
 
-VOLUME_DEPTH = 246
+VOLUME_DEPTH = 2
 OUTPUT_FOLDER = "./output_folder/"
 REF_FOLDER = "/home/gsorrentino/CT/"
 FLT_FOLDER = "/home/gsorrentino/PET/"

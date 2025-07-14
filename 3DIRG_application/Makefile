@@ -18,9 +18,9 @@ CC := g++
 CXXFLAGS = -std=c++17 -O2 -fPIC -Wno-deprecated-declarations
 
 # Paths for HW_REG (se serve)
-INCL_DRVR = -I$(DRVR_DIR) -I$(XILINX_XRT)/include -I$(XILINX_HLS)/include
+INCL_DRVR := -I$(XILINX_XRT)/include
+XILINX_XRT ?= /opt/xrt/2022.1/opt/xilinx/xrt
 LDFLAGS := -L$(XILINX_XRT)/lib -lxrt_coreutil
-
 # OpenCV flags
 
 OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)
@@ -47,7 +47,7 @@ all: build_host
 
 build_host: $(EXECUTABLE)
 $(EXECUTABLE): $(HOST_SRCS)
-	$(CC) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(OPENCV_CFLAGS) $(OPENCV_LIBS) -DHW_REG
+	$(CC) $(CXXFLAGS) $(INCL_DRVR) -o $@ $^ $(LDFLAGS) $(OPENCV_CFLAGS) $(OPENCV_LIBS) -DHW_REG
 
 build_host_sw: $(EXECUTABLE_SW)
 $(EXECUTABLE_SW): $(HOST_SRCS)

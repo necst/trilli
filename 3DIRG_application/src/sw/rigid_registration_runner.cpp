@@ -44,12 +44,6 @@ bool get_xclbin_path(std::string &xclbin_file) {
   return true;
 }
 
-// ls -l build/trilli_wrapper.so
-void write_volume_to_file(uint8_t *buffer, int dimension, int n_couples,
-//ls -l build/trilli_wrapper.so
-                           int offset, int padding, const std::string
-//                           &folder);
-
 } // anonymous namespace
 
 void run_rigid_registration_trilli(const std::string &ref_img_path,
