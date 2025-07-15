@@ -52,21 +52,23 @@ build_host_sw: $(EXECUTABLE_SW)
 $(EXECUTABLE_SW): $(HOST_SRCS)
 	$(CC) $(CXXFLAGS) -o $@ $^ $(OPENCV_CFLAGS) $(OPENCV_LIBS)
 
-build_pybind_sw: $(BUILD_DIR)/trilli_wrapper_sw.so
+PYBIND_MODE ?= hw
 
-$(BUILD_DIR)/trilli_wrapper_sw.so: $(PYBIND_SRCS)
-	mkdir -p $(BUILD_DIR)
-	$(CC) $(CXXFLAGS) $(PYBIND11_INCLUDE) -I$(SW_DIR) \
-	$(OPENCV_CFLAGS) -shared -o $@ $^ \
-	$(OPENCV_LIBS)
+build_pybind: $(BUILD_DIR)/trilli_wrapper.so
 
-build_pybind_hw: $(BUILD_DIR)/trilli_wrapper_hw.so
-
-$(BUILD_DIR)/trilli_wrapper_hw.so: $(PYBIND_SRCS)
+ifeq ($(PYBIND_MODE), hw)
+$(BUILD_DIR)/trilli_wrapper.so: $(PYBIND_SRCS)
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(CXXFLAGS) -DHW_REG $(PYBIND11_INCLUDE) -I$(SW_DIR) \
 	$(INCL_DRVR) $(OPENCV_CFLAGS) -shared -o $@ $^ \
 	$(LDFLAGS) $(OPENCV_LIBS)
+else
+$(BUILD_DIR)/trilli_wrapper.so: $(PYBIND_SRCS)
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(CXXFLAGS) $(PYBIND11_INCLUDE) -I$(SW_DIR) \
+	$(OPENCV_CFLAGS) -shared -o $@ $^ \
+	$(OPENCV_LIBS)
+endif
 
 clean:
 	rm -f $(EXECUTABLE) $(EXECUTABLE_SW)

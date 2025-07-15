@@ -2,28 +2,47 @@
 
 import os
 import sys
-sys.path.append("./build")
+import argparse
 
+# Add build directory to sys.path to import the pybind11 wrapper
+sys.path.append("./build")
 import trilli_wrapper
 
-VOLUME_DEPTH = 2
-OUTPUT_FOLDER = "./output_folder/"
-REF_FOLDER = "/home/gsorrentino/CT/"
-FLT_FOLDER = "/home/gsorrentino/PET/"
+# Fixed parameters (can be exposed as CLI args if needed)
+VOLUME_DEPTH = 246
 RANGE_TX = 50
 RANGE_TY = 50
 RANGE_ANG = 1.0
 
-# Override folder di floating se passato come argomento
-if len(sys.argv) > 1:
-    FLT_FOLDER = sys.argv[1]
+# Argument parser setup
+parser = argparse.ArgumentParser(description="Run rigid registration using trilli_wrapper.")
+parser.add_argument("--ref_folder", "-rf" ,type=str, help="Path to the reference volume folder")
+parser.add_argument("--flt_folder", "-ff" ,type=str, help="Path to the floating volume folder")
+parser.add_argument("--output_folder", type=str, default="./output_folder/",
+                    help="Path to the output folder (default: ./output_folder/)")
 
-print(f"Reference folder: {REF_FOLDER}")
-print(f"Floating folder: {FLT_FOLDER}")
-print(f"Registered output folder: {OUTPUT_FOLDER}")
+args = parser.parse_args()
 
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+# Extract arguments into variables
+ref_folder = args.ref_folder
+flt_folder = args.flt_folder
+output_folder = args.output_folder
 
+# Print configuration summary
+print(f"Reference folder: {ref_folder}")
+print(f"Floating folder: {flt_folder}")
+print(f"Registered output folder: {output_folder}")
+
+# Ensure output directory exists
+os.makedirs(output_folder, exist_ok=True)
+
+# Call the C++ registration function via pybind11 wrapper
 trilli_wrapper.run_rigid_registration_trilli(
-    REF_FOLDER, FLT_FOLDER, OUTPUT_FOLDER, VOLUME_DEPTH, RANGE_TX, RANGE_TY, RANGE_ANG
+    ref_folder,
+    flt_folder,
+    output_folder,
+    VOLUME_DEPTH,
+    RANGE_TX,
+    RANGE_TY,
+    RANGE_ANG
 )

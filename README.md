@@ -253,3 +253,69 @@ If you find this repository useful, please use the following citation:
     organization={IEEE}
  }
 ```
+
+# 🧪 Pybind Wrapper (Experimental)
+
+This document describes how to configure, build, and run the **Pybind-based wrapper** for Trilli's rigid registration module.
+
+---
+
+## ⚙️ Prerequisites
+
+Before building, make sure to:
+
+- Edit the `config` file to match your target (software or hardware)
+- Install Python via `pyenv` (Python 3.11+ recommended)
+- Ensure dependencies like `pybind11`, `OpenCV`, and `pyenv-virtualenv` are available
+
+---
+
+## 🔧 Setup Instructions
+
+### 0. Configure the project
+
+Edit the `config` file for your system and run:
+
+```bash
+make config
+```
+
+1. Set up the Python environment (only once)
+This creates and activates a pyenv-based virtual environment:
+
+```bash
+./setup_env.sh
+```
+
+
+🧪 Software Wrapper Deployment
+To prepare the software-only version of the wrapper:
+
+```bash
+./prepare_wrapper.sh sw
+```
+
+To run: 
+```bash
+cd ..
+cd 3DIRG_wrapper_deploy
+python3 rigid_registration.py --ref_folder <REF> --flt_folder <FLT> [--output_folder <OUT>]
+```
+
+⚙️ Hardware Wrapper Deployment
+To prepare the hardware version (using TRILLI):
+
+```bash
+./prepare_wrapper.sh hw
+```
+
+Copy the 3DIRG_wrapper_deploy on the deploy machine
+
+
+4. Build the wrapper
+On the FPGA machine, compile the hardware-enabled wrapper:
+
+```bash
+make build_pybind PYBIND_MODE=hw
+python3 rigid_registration.py --ref_folder <REF> --flt_folder <FLT> [--output_folder <OUT>]
+```
