@@ -50,7 +50,7 @@ flt_flat = flt_volume.flatten(order='F').tolist()
 
 # Call C++ registration function
 print("Running rigid registration...")
-registered_flat = trilli_wrapper.run_rigid_registration_trilli_from_flat(
+registered_flat = trilli_wrapper.run_rigid_registration_trilli_from_data(
     ref_flat,
     flt_flat,
     width,

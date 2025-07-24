@@ -24,7 +24,7 @@ if [[ "$MODE" == "sw" ]]; then
 
     # Copy .so, .py and .python-version
     cp -r build "$DEPLOY_DIR/"
-    cp rigid_registration.py "$DEPLOY_DIR/rigid_registration.py"
+    cp *.py "$DEPLOY_DIR/"
 
     if [ -f .python-version ]; then
         cp .python-version "$DEPLOY_DIR/.python-version"
