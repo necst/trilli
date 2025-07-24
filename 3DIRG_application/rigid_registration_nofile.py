@@ -53,8 +53,7 @@ print("Running rigid registration...")
 registered_flat = trilli_wrapper.run_rigid_registration_trilli_from_data(
     ref_flat,
     flt_flat,
-    width,
-    height,
+    args.output_folder,
     depth,
     RANGE_TX,
     RANGE_TY,

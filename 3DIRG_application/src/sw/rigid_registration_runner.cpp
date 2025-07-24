@@ -123,6 +123,5 @@ std::vector<uint8_t> run_rigid_registration_trilli_from_data(
     int n_couples, int rangeX, int rangeY, float rangeAngZ) {
 
   std::cout << "Starting Trilli from data" << std::endl;
-  std::vector<uint8_t> empty_array(DIMENSION * DIMENSION * (n_couples + 1), 0);
-  return empty_array; // Placeholder return value
+  return ref_volume; // Placeholder return value
 }
