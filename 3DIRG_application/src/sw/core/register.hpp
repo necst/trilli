@@ -162,8 +162,10 @@ public:
     optimize_powell(o, {rng.begin(), rng.end()},
                     std::bind(cost_function_3d, buffer_ref, buffer_flt,
                               n_couples, padding, std::placeholders::_1));
-    tx = 20; // init[0];
-    ty = 20; // init[1];
+    std::cout << "optimized params -  tx: " << init[0] << " ty: " << init[1]
+              << " ang: " << init[2] << std::endl;
+    tx = init[0];
+    ty = init[1];
     ang_rad = init[2];
     double mutual_inf =
         sw_registration_step_3d(buffer_ref, buffer_flt, registered_volume,
