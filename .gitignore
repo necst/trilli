@@ -139,3 +139,5 @@ data_movers/writer_body.hpp
 data_movers/setup_mi_body.hpp
 3DIRG_application/*.xclbin
 3DIRG_application/trilli_app
+3DIRG_wrapper_deploy
+3DIRG_wrapper_deploy/
