@@ -48,7 +48,9 @@ flt_volume = load_nii_gz(args.flt)
 bg_ref = estimate_background_mode(ref_volume)
 bg_flt = estimate_background_mode(flt_volume)
 print(f"Estimated background - ref: {bg_ref}, flt: {bg_flt}")
-ref_volume = replace_background(ref_volume, old_bg_value=bg_ref, new_bg_value=bg_flt)
+if bg_ref != bg_flt:
+    print("ALERT - different backgrounds - making them homogeneous by replacing REF values.")
+    ref_volume = replace_background(ref_volume, old_bg_value=bg_ref, new_bg_value=bg_flt)
 
 if ref_volume.shape != flt_volume.shape:
     raise ValueError(f"Input volumes must have same shape, got {ref_volume.shape} vs {flt_volume.shape}")

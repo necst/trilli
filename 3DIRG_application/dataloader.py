@@ -71,12 +71,11 @@ def read_volume_with_datalayout(path, size, n_couples, border_padding, depth_pad
             raise FileNotFoundError(f"Image not found or invalid: {file_path}")
         if img.shape != (size, size):
             raise ValueError(f"Unexpected image shape: {img.shape}, expected ({size}, {size})")
-
         # Apply border padding
         if border_padding > 0:
             img = np.pad(img, ((border_padding, border_padding), (border_padding, border_padding)), mode='constant', constant_values=0)
 
-        img_flat = img.flatten(order='C')
+        img_flat = img.T.flatten(order='C')
 
         for i in range(slice_area):
             flat_buffer[i * total_depth + z] = img_flat[i]
@@ -107,7 +106,7 @@ def write_volume_with_datalayout(flat_buffer, width, height, depth, output_dir):
         for i in range(slice_area):
             slice_flat[i] = flat_buffer[i * depth + z]
 
-        slice_2d = slice_flat.reshape((width, height), order='C')
+        slice_2d = slice_flat.reshape((width, height), order='C').T
         out_path = os.path.join(output_dir, f"IM{z}.png")
         imageio.imwrite(out_path, slice_2d)
 
@@ -161,10 +160,36 @@ def to_resolution(volume: np.ndarray, target_width: int, target_height: int) -> 
 
     return padded_volume
 
-def load_nii_gz(path, dtype=np.uint8):
-    """Load a .nii.gz file and cast it to the specified dtype (default: uint8)."""
+def load_nii_gz(path, dtype=np.uint8, rescale_to_uint8=True):
+    """
+    Load a .nii(.gz) file and optionally rescale to uint8.
+
+    Args:
+        path (str): Path to the NIfTI file.
+        dtype (np.dtype): Desired output type (default: np.uint8).
+        rescale_to_uint8 (bool): If True and dtype == uint8, rescales intensities to [0,255].
+
+    Returns:
+        np.ndarray: 3D volume array.
+    """
     nii = nib.load(path)
-    volume = nii.get_fdata().astype(dtype)
+    volume = nii.get_fdata()
+
+    if dtype == np.uint8 and rescale_to_uint8:
+        min_val = np.min(volume)
+        max_val = np.max(volume)
+        if max_val - min_val < 1e-6:
+            # Avoid divide-by-zero if image is flat
+            volume = np.zeros_like(volume, dtype=np.uint8)
+        else:
+            if min_val < 0 or max_val > 255:
+                # Rescale only if values are outside [0, 255]
+                print(f"ALERT - Pixels are not normalized in 8bits, MIN={min_val} - MAX{max_val} -> goint to rescale to UINT8.")
+                volume = (volume - min_val) / (max_val - min_val)
+                volume = (volume * 255).astype(np.uint8)
+    else:
+        volume = volume.astype(dtype)
+
     return volume
 
 def save_slices(volume, output_dir, fmt='png', dtype=np.uint8):
