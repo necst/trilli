@@ -209,6 +209,29 @@ def save_slices(volume, output_dir, fmt='png', dtype=np.uint8):
 
     print(f"Saved {volume.shape[2]} slices in '{output_dir}'.")
 
+def save_volume_as_nifti(volume: np.ndarray, output_path: str, affine=None, dtype=np.uint8):
+    """
+    Save a 3D volume as a .nii.gz file without altering axes order.
+
+    Args:
+        volume (np.ndarray): 3D volume (H, W, D) to save.
+        output_path (str): Path to the output .nii.gz file.
+        affine (np.ndarray or None): 4x4 affine matrix (default: identity).
+        dtype (np.dtype): Data type to save as (default: np.uint8).
+    """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    if affine is None:
+        affine = np.eye(4)
+
+    volume = volume.astype(dtype)
+
+    nii = nib.Nifti1Image(volume, affine)
+    nib.save(nii, output_path)
+
+    print(f"💾 Saved NIfTI volume: {output_path}")
+    print(f"🧩 Shape written: {volume.shape}, dtype: {volume.dtype}")
+    
 def main():
     parser = argparse.ArgumentParser(description="Load a .nii.gz file and optionally save its slices as images.")
     parser.add_argument("input", help="Path to the .nii.gz file")
