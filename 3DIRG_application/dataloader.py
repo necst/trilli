@@ -4,6 +4,129 @@ import numpy as np
 import nibabel as nib
 import imageio.v2 as imageio
 
+import os
+import numpy as np
+import imageio.v2 as imageio
+
+def read_volume_with_datalayout_from_array(volume, border_padding=0, depth_padding=0):
+    """
+    Same as read_volume_with_datalayout, but from numpy 3D array instead of images.
+
+    Args:
+        volume (np.ndarray): 3D array (width, height, depth)
+        border_padding (int): padding on x/y
+        depth_padding (int): number of zero slices to add
+
+    Returns:
+        flat_buffer, padded_size, total_depth
+    """
+    size_x, size_y, depth = volume.shape
+    if size_x != size_y:
+        raise ValueError("Only square slices supported for now")
+    size = size_x
+
+    padded_size = size + 2 * border_padding
+    total_depth = depth + depth_padding
+    slice_area = padded_size * padded_size
+    flat_buffer = np.zeros(total_depth * slice_area, dtype=np.uint8)
+
+    for z in range(depth):
+        slice_2d = volume[:, :, z]
+        if border_padding > 0:
+            slice_2d = np.pad(slice_2d, ((border_padding, border_padding), (border_padding, border_padding)), mode='constant', constant_values=0)
+        flat_slice = slice_2d.flatten(order='C')
+        for i in range(slice_area):
+            flat_buffer[i * total_depth + z] = flat_slice[i]
+
+    return flat_buffer, padded_size, total_depth
+
+def read_volume_with_datalayout(path, size, n_couples, border_padding, depth_padding):
+    """
+    Reads PNG slices and flattens them into a 1D buffer using interleaved data layout:
+    dest[i * total_depth + z] = pixel_i from slice z
+
+    Args:
+        path (str): Directory containing IM0.png, IM1.png, ...
+        size (int): Original image width/height (no padding)
+        n_couples (int): Number of slices to load
+        border_padding (int): Padding to apply around each slice
+        depth_padding (int): Additional zero slices to append
+
+    Returns:
+        flat_buffer (np.ndarray): 1D uint8 array of shape (W * H * (n_couples + depth_padding))
+        padded_size (int): Final width/height after padding
+        total_depth (int): n_couples + depth_padding
+    """
+    padded_size = size + 2 * border_padding
+    total_depth = n_couples + depth_padding
+    slice_area = padded_size * padded_size
+
+    flat_buffer = np.zeros(total_depth * slice_area, dtype=np.uint8)
+
+    for z in range(n_couples):
+        file_path = os.path.join(path, f"IM{z}.png")
+        img = imageio.imread(file_path)
+
+        if img is None or img.ndim != 2:
+            raise FileNotFoundError(f"Image not found or invalid: {file_path}")
+        if img.shape != (size, size):
+            raise ValueError(f"Unexpected image shape: {img.shape}, expected ({size}, {size})")
+
+        # Apply border padding
+        if border_padding > 0:
+            img = np.pad(img, ((border_padding, border_padding), (border_padding, border_padding)), mode='constant', constant_values=0)
+
+        img_flat = img.flatten(order='C')
+
+        for i in range(slice_area):
+            flat_buffer[i * total_depth + z] = img_flat[i]
+
+    # Depth padding is already zero-initialized
+    return flat_buffer, padded_size, total_depth
+
+def write_volume_with_datalayout(flat_buffer, width, height, depth, output_dir):
+    """
+    Writes volume slices (PNG) from a flat buffer using interleaved layout:
+    pixel = buffer[i * depth + z]
+
+    Args:
+        flat_buffer (np.ndarray): 1D uint8 buffer in interleaved layout
+        width (int): Width of each 2D slice
+        height (int): Height of each 2D slice
+        depth (int): Number of slices to write
+        output_dir (str): Destination folder
+    """
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+
+    slice_area = width * height
+
+    for z in range(depth):
+        slice_flat = np.empty((slice_area,), dtype=np.uint8)
+
+        for i in range(slice_area):
+            slice_flat[i] = flat_buffer[i * depth + z]
+
+        slice_2d = slice_flat.reshape((width, height), order='C')
+        out_path = os.path.join(output_dir, f"IM{z}.png")
+        imageio.imwrite(out_path, slice_2d)
+
+    print(f"Saved {depth} slices to '{output_dir}'")
+
+def volume_to_flat_slices(volume: np.ndarray, depth_padding=0) -> list:
+    """
+    Converts a 3D volume (shape: W x H x D) to a flat list with the depth-wise layout
+    """
+    W, H, D = volume.shape
+    flat_data = []
+    for z in range(D):
+        slice_2d = volume[:, :, z]
+        flat_data.extend(slice_2d.flatten(order='C')) 
+    # Add padding slices (zero-filled)
+    for _ in range(depth_padding):
+        flat_data.extend([0] * (W * H))
+    return flat_data
+
 def to_resolution(volume: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
     """
     Padded a 3D volume with zeros so each 2D slice has resolution (target_width x target_height).

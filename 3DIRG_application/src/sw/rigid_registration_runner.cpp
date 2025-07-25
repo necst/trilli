@@ -77,7 +77,18 @@ void run_rigid_registration_trilli(const std::string &ref_img_path,
   file_repository files(ref_img_path, float_img_path);
   std::vector<cv::Mat> reference_image = files.reference_image_3d(n_couples);
   std::vector<cv::Mat> floating_image = files.floating_image_3d(n_couples);
-
+  uint8_t *buffer_ref =
+      new uint8_t[DIMENSION * DIMENSION * (n_couples + padding)];
+  uint8_t *buffer_flt =
+      new uint8_t[DIMENSION * DIMENSION * (n_couples + padding)];
+  cast_mats_to_vector(buffer_ref, reference_image, DIMENSION, n_couples, 0,
+                      padding);
+  cast_mats_to_vector(buffer_flt, floating_image, DIMENSION, n_couples, 0,
+                      padding);
+  std::vector<uint8_t> ref_vol = std::vector<uint8_t>(
+      buffer_ref, buffer_ref + DIMENSION * DIMENSION * (n_couples + padding));
+  std::vector<uint8_t> flt_vol = std::vector<uint8_t>(
+      buffer_flt, buffer_flt + DIMENSION * DIMENSION * (n_couples + padding));
 #ifdef HW_REG
   std::string xclbin_file;
   if (!get_xclbin_path(xclbin_file))
@@ -117,8 +128,9 @@ void run_rigid_registration_trilli(const std::string &ref_img_path,
       new uint8_t[DIMENSION * DIMENSION * (n_couples + padding)];
 
   imagefusion::perform_fusion_from_files_3d(
-      reference_image, floating_image, "mutualinformation", "alphablend",
-      n_couples, padding, rangeX, rangeY, rangeAngZ, registered_volume);
+      reference_image, floating_image, ref_vol, flt_vol, "mutualinformation",
+      "alphablend", n_couples, padding, rangeX, rangeY, rangeAngZ,
+      registered_volume);
 
   std::cout << "Saving Volumes" << std::endl;
   write_volume_to_file(registered_volume, DIMENSION, n_couples, 0, padding,
@@ -129,9 +141,9 @@ void run_rigid_registration_trilli(const std::string &ref_img_path,
 }
 
 std::vector<uint8_t> run_rigid_registration_trilli_from_data(
-    const std::vector<uint8_t> &ref_volume,
-    const std::vector<uint8_t> &float_volume, const std::string &output_folder,
-    int n_couples, int rangeX, int rangeY, float rangeAngZ) {
+    std::vector<uint8_t> &ref_volume, std::vector<uint8_t> &float_volume,
+    const std::string &output_folder, int n_couples, int rangeX, int rangeY,
+    float rangeAngZ) {
   std::cout << "Starting Trilli" << std::endl;
 
   std::cout << "Number of couples: " << n_couples << std::endl;
@@ -176,8 +188,9 @@ std::vector<uint8_t> run_rigid_registration_trilli_from_data(
   uint8_t *registered_volume =
       new uint8_t[DIMENSION * DIMENSION * (n_couples + padding)];
   imagefusion::perform_fusion_from_files_3d(
-      reference_image, floating_image, "mutualinformation", "alphablend",
-      n_couples, padding, rangeX, rangeY, rangeAngZ, registered_volume);
+      reference_image, floating_image, ref_volume, float_volume,
+      "mutualinformation", "alphablend", n_couples, padding, rangeX, rangeY,
+      rangeAngZ, registered_volume);
   std::cout << "Saving Volumes" << std::endl;
   std::vector<uint8_t> output_volume(
       registered_volume,
