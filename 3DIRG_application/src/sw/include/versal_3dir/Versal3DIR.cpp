@@ -267,6 +267,23 @@ public:
     return 0;
   }
 
+  int load_volumes_from_data(const std::vector<uint8_t> &raw_ref,
+                             const std::vector<uint8_t> &raw_flt) {
+    const size_t expected_size = DIMENSION * DIMENSION * (n_couples + padding);
+
+    if (raw_ref.size() != expected_size || raw_flt.size() != expected_size) {
+      std::cerr << "Error: Raw volume size does not match expected dimensions ("
+                << expected_size << " bytes)." << std::endl;
+      return -1;
+    }
+
+    input_ref = const_cast<uint8_t *>(raw_ref.data());
+    input_flt = const_cast<uint8_t *>(raw_flt.data());
+    output_flt = new uint8_t[expected_size];
+
+    return 0;
+  }
+
   //
   // Set the transformation parameters
   //
