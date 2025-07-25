@@ -25,6 +25,17 @@ using namespace std;
 
 namespace {
 
+void save_slices_as_png(const std::vector<cv::Mat> &volume,
+                        const std::string &folder, const std::string &prefix) {
+  for (size_t i = 0; i < volume.size(); ++i) {
+    std::string filename =
+        folder + "/" + prefix + "_" + std::to_string(i) + ".png";
+    cv::imwrite(filename, volume[i]);
+  }
+  std::cout << "Saved " << volume.size() << " slices to " << folder
+            << std::endl;
+}
+
 bool get_xclbin_path(std::string &xclbin_file) {
   char *env_emu = getenv("XCL_EMULATION_MODE");
   if (env_emu) {
@@ -136,6 +147,12 @@ std::vector<uint8_t> run_rigid_registration_trilli_from_data(
       files.load_volume_from_raw(ref_volume, n_couples);
   std::vector<cv::Mat> floating_image =
       files.load_volume_from_raw(float_volume, n_couples);
+  //
+  // save_slices_as_png(reference_image, output_folder + "debug/reference",
+  // "ref");
+  // save_slices_as_png(floating_image, output_folder + "debug/float",
+  // "ref");
+
 #ifdef HW_REG
   std::string xclbin_file;
   if (!get_xclbin_path(xclbin_file))

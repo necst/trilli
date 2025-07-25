@@ -88,7 +88,8 @@ public:
     for (int i = 0; i < volume; i++) {
       cv::Mat img = cv::Mat(DIMENSION, DIMENSION, CV_8UC1,
                             (void *)&raw_image[i * DIMENSION * DIMENSION]);
-      output[i] = img;
+      output[i] = img.t(); // GIUSEPPE TODO: questa T va tolta, è solo per
+                           // vedere l'immagine correttamente rispetto al python
     }
     return output;
   }

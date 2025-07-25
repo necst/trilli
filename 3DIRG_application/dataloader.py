@@ -4,19 +4,58 @@ import numpy as np
 import nibabel as nib
 import imageio.v2 as imageio
 
-def load_nii_gz(path):
-    """Load a .nii.gz file as a NumPy array."""
+def to_resolution(volume: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
+    """
+    Padded a 3D volume with zeros so each 2D slice has resolution (target_width x target_height).
+
+    Args:
+        volume (np.ndarray): 3D input volume of shape (width, height, depth)
+        target_width (int): desired width of each slice
+        target_height (int): desired height of each slice
+
+    Returns:
+        np.ndarray: padded volume with shape (target_width, target_height, depth)
+    """
+    current_width, current_height, depth = volume.shape
+
+    pad_x = target_width - current_width
+    pad_y = target_height - current_height
+
+    if pad_x < 0 or pad_y < 0:
+        raise ValueError(f"Target resolution ({target_width}x{target_height}) must be >= current ({current_width}x{current_height})")
+
+    pad_x_before = pad_x // 2
+    pad_x_after = pad_x - pad_x_before
+    pad_y_before = pad_y // 2
+    pad_y_after = pad_y - pad_y_before
+
+    padded_volume = np.pad(
+        volume,
+        pad_width=((pad_x_before, pad_x_after),
+                   (pad_y_before, pad_y_after),
+                   (0, 0)),  # No padding along depth
+        mode='edge'    )
+
+    return padded_volume
+
+def load_nii_gz(path, dtype=np.uint8):
+    """Load a .nii.gz file and cast it to the specified dtype (default: uint8)."""
     nii = nib.load(path)
-    volume = nii.get_fdata()
+    volume = nii.get_fdata().astype(dtype)
     return volume
 
-def save_slices(volume, output_dir, fmt='png'):
-    """Save volume slices as 2D images in the specified format."""
+def save_slices(volume, output_dir, fmt='png', dtype=np.uint8):
+    """Save volume slices as 2D images in the specified format and dtype."""
     os.makedirs(output_dir, exist_ok=True)
-    volume = (volume - np.min(volume)) / (np.max(volume) - np.min(volume))  # normalize to 0-1
+
+    if dtype == np.uint8 and volume.max() <= 1.0:
+        # Assume input is normalized float [0,1]
+        volume = (volume * 255).astype(np.uint8)
+    else:
+        volume = volume.astype(dtype)
 
     for i in range(volume.shape[2]):
-        slice_2d = (volume[:, :, i] * 255).astype(np.uint8)
+        slice_2d = volume[:, :, i]
         filename = os.path.join(output_dir, f'slice_{i:03d}.{fmt}')
         imageio.imwrite(filename, slice_2d)
 

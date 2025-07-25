@@ -10,6 +10,7 @@ sys.path.append("./build")
 import trilli_wrapper
 
 # Import dataloader from same folder
+import dataloader
 from dataloader import load_nii_gz
 
 # Fixed parameters
@@ -33,6 +34,8 @@ flt_volume = load_nii_gz(args.flt)
 if ref_volume.shape != flt_volume.shape:
     raise ValueError(f"Input volumes must have same shape, got {ref_volume.shape} vs {flt_volume.shape}")
 
+ref_volume = dataloader.to_resolution(ref_volume, 512, 512)
+flt_volume = dataloader.to_resolution(flt_volume, 512, 512)
 depth = ref_volume.shape[2]
 width = ref_volume.shape[0]
 height = ref_volume.shape[1]
@@ -44,9 +47,12 @@ if ref_volume.dtype != np.uint8:
     ref_volume = ref_volume.astype(np.uint8)
     flt_volume = flt_volume.astype(np.uint8)
 
-# Flatten in Fortran order (slice after slice)
+ref_volume = np.transpose(ref_volume, (1, 0, 2))
+flt_volume = np.transpose(flt_volume, (1, 0, 2))
 ref_flat = ref_volume.flatten(order='F').tolist()
 flt_flat = flt_volume.flatten(order='F').tolist()
+
+dataloader.save_slices(ref_volume, os.path.join(args.output_folder, "preprocessing", "reference"))
 
 # Call C++ registration function
 print("Running rigid registration...")
@@ -62,7 +68,7 @@ registered_flat = trilli_wrapper.run_rigid_registration_trilli_from_data(
 
 # Convert back to 3D volume
 registered_volume = np.array(registered_flat, dtype=np.uint8).reshape((width, height, depth), order='F')
-
+dataloader.save_slices(registered_volume, os.path.join(args.output_folder, "output", "registered"))
 # Save output if requested
 if args.save_nifti:
     import nibabel as nib
