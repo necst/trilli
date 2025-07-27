@@ -71,7 +71,6 @@ def read_volume_with_datalayout(path, size, n_couples, border_padding, depth_pad
             raise FileNotFoundError(f"Image not found or invalid: {file_path}")
         if img.shape != (size, size):
             raise ValueError(f"Unexpected image shape: {img.shape}, expected ({size}, {size})")
-        # Apply border padding
         if border_padding > 0:
             img = np.pad(img, ((border_padding, border_padding), (border_padding, border_padding)), mode='constant', constant_values=0)
 
@@ -156,7 +155,9 @@ def to_resolution(volume: np.ndarray, target_width: int, target_height: int) -> 
         pad_width=((pad_x_before, pad_x_after),
                    (pad_y_before, pad_y_after),
                    (0, 0)),  # No padding along depth
-        mode='edge'    )
+        mode='constant',
+        constant_values=0
+           )
 
     return padded_volume
 
