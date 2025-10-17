@@ -43,13 +43,14 @@ inline aie::vector<uint8,32> fromFloat32ToUint8(aie::vector<float,32> vec) {
     return uint8x32;
 }
 
-void adder(input_window_float* restrict p_ab, input_window_float* restrict p_cd, output_stream<uint8>* restrict float_interpolated){
+void adder(input_window_float* restrict p_ab, output_stream<uint8>* restrict float_interpolated){
     aie::vector<float, 32> pixel_ab;
     aie::vector<float, 32> pixel_cd;
     aie::vector<float, 32> pixel_interpolated_float;
 
     window_acquire(p_ab);
     aie::vector<float, 32> tmp = window_readincr_v32(p_ab);
+    aie::vector<float, 32> tmp_dummy = window_readincr_v32(p_ab);
     window_release(p_ab);
     aie::vector<int32, 32> tmp2 = aie::to_fixed(tmp, 0);
     const int n_couples = tmp2.get(0);
@@ -60,15 +61,20 @@ void adder(input_window_float* restrict p_ab, input_window_float* restrict p_cd,
     chess_prepare_for_pipelining
     {
         window_acquire(p_ab);
-        pixel_ab = window_readincr_v32(p_ab);
-        window_release(p_ab);
+        pixel_ab = window_readincr_v32(p_ab);// vediamo se è possibile mettere 32, altrimenti 4*8 o 2 * 16
+        // window_release(p_ab);
 
-        window_acquire(p_cd);
-        pixel_cd = window_readincr_v32(p_cd);
-        window_release(p_cd);
+        // second read from mac_top, replacing mac_bottom
+        // window_acquire(p_ab);
+        pixel_cd = window_readincr_v32(p_ab);
+        window_release(p_ab);
 
         pixel_interpolated_float = aie::add(pixel_ab, pixel_cd);
 
         writeincr(float_interpolated, fromFloat32ToUint8(pixel_interpolated_float));
+
+        // window_acquire(float_interpolated);
+        // window_writeincr(float_interpolated, fromFloat32ToUint8(pixel_interpolated_float));
+        // window_release(float_interpolated);
     }
 }

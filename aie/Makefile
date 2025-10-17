@@ -23,7 +23,7 @@
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 all: aie_compile aie_simulate
 all_x86: aie_compile_x86 aie_simulate_x86
-PLATFORM := /opt/xilinx/platforms/xilinx_vck5000_gen4x8_xdma_2_202210_1/hw/xilinx_vck5000_gen4x8_xdma_2_202210_1.xsa
+PLATFORM := /opt/xilinx/platforms/xilinx_vck5000_gen4x8_qdma_2_202220_1/hw/xilinx_vck5000_gen4x8_qdma_2_202220_1.xsa
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #Clean build products
@@ -41,7 +41,7 @@ libadf.a: src/*
 	@echo "INFO:Running aiecompiler for hw..."
 	@rm -rf Work libadf.a
 	@mkdir -p Work
-	@aiecompiler --target=hw --platform=$(PLATFORM) --include="src" --include="../common" --workdir=./Work --heapsize=2048 --stacksize=4096 --xlopt=0 -v src/graph_incremental.cpp
+	@aiecompiler --target=hw --platform=$(PLATFORM) --pl-freq=250 --pl-register-threshold=312 --include="src" --include="../common" --workdir=./Work --heapsize=2048 --stacksize=4096 --xlopt=0 -v src/graph_incremental.cpp
 	
 aie_compile_x86: 
 	@echo "INFO:- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
@@ -75,3 +75,4 @@ generate_input_data:
 	$(info - N_COUPLES         $(N_COUPLES))
 	$(info ********************************************************)
 	$(info )
+	printf "$(TX)\n$(TY)\n$(shell echo "scale=6; ${ANG}*${PI}/${HALF_ROT}" | bc)\n$(N_COUPLES)\n" > ./data/params_in.txt

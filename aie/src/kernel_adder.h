@@ -26,5 +26,5 @@ SOFTWARE.
 
 #include <adf.h>
 #include "common.h"
-void adder(input_window_float* restrict p_ab, input_window_float* restrict p_cd, output_stream<uint8>* restrict float_interpolated);
+void adder(input_window_float* restrict p_ab, output_stream<uint8>* restrict float_interpolated);
 

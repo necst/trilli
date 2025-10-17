@@ -30,14 +30,29 @@ SOFTWARE.
 #define ID 0
 using namespace std;
 
-const uint64_t aie_patterns[INT_PE][2] = AIE_PATTERNS;
-const int aie_pattern_offsets[INT_PE][2] = AIE_PATTERN_OFFSETS;
+// const uint64_t aie_patterns[INT_PE][2] = AIE_PATTERNS;
+// const int aie_pattern_offsets[INT_PE][2] = AIE_PATTERN_OFFSETS;
 
 inline aie::vector<float,32> fromUint8ToFloat32(aie::vector<uint8,32> vec) {
     aie::accum<acc32, 32> acc;
     acc.from_vector(vec, 0);
     aie::vector<int32, 32> vec_int32 = acc.to_vector<int32>();
     return aie::to_float(vec_int32, 0);
+}
+
+inline aie::vector<uint8,32> fromFloat32ToUint8(aie::vector<float,32> vec) {
+    // initial vector: [float-pixel-value, float-pixel-value, ...]
+    
+    // 1) convert to fixed point (by rounding), getting: [int32-pixel-value, int32-pixel-value, ...]
+    aie::vector<int32, 32> int32x32 = aie::to_fixed(vec, 0);
+    // 2) cast to uint8, getting: [uint8-pixel-value, 0, 0, 0, uint8-pixel-value, 0, 0, 0, ...]
+    aie::vector<uint8, 128> uint8x128 = int32x32.cast_to<uint8>();
+    // 3) select even pixels, getting: [uint8-pixel-value, 0, uint8-pixel-value, 0 ...]
+    aie::vector<uint8, 64> uint8x64 = aie::filter_even(uint8x128, 1);
+    // 4) select again even pixels, getting: [uint8-pixel-value, uint8-pixel-value, ...]
+    aie::vector<uint8, 32> uint8x32 = aie::filter_even(uint8x64, 1);
+
+    return uint8x32;
 }
 
 constexpr int J_COEFF_INDEX = 2 + (1 - ID);
@@ -48,93 +63,96 @@ mac_top
 #else
 mac_bottom
 #endif
-(input_window_uint8* restrict pixels_in, input_window_float* restrict coeff_in, output_window_float* restrict partial_interpol_out) {
-    aie::vector<uint8, 32> pixel_left_uint8;
-    aie::vector<uint8, 32> pixel_right_uint8;
-    aie::vector<uint8, 128> pixel_left_uint8_BIG;
-    aie::vector<uint8, 128> pixel_right_uint8_BIG;
-
-    aie::vector<int16, 32> pixel_left_uint16;
-    aie::vector<int16, 32> pixel_right_uint16;
-
-    aie::vector<int32, 32> pixel_left_int32;
-    aie::vector<int32, 32> pixel_right_int32;
+(input_window_uint8* restrict pixels_in, input_window_float* restrict coeff_in, output_stream<uint8>* restrict float_interpolated) {
     
-    aie::vector<float, 32> pixel_left;
-    aie::vector<float, 32> pixel_right;
-    aie::vector<float, 32> pixel_leftright;
-    aie::vector<float, 4> Rcoeff;
-
-    aie::vector<uint8, 128> uint8zeros;
-
+    // --- reading n_couples from coeff_in ---
     window_acquire(coeff_in);
-    aie::vector<float, 32> tmp = window_readincr_v32(coeff_in);
-    aie::vector<float, 32> tmp2 = window_readincr_v32(coeff_in);
+    aie::vector<float, 32> c_tmp1 = window_readincr_v32(coeff_in);
+    aie::vector<float, 32> c_tmp2 = window_readincr_v32(coeff_in);
     window_release(coeff_in);
+    const int n_couples = aie::to_fixed(c_tmp1.get(0), 0);
 
-    const float n_couples_float = tmp.get(0);
-    const int n_couples = aie::to_fixed(n_couples_float, 0);
+    // --- reading IPE_ID from pixels_in ---
+    window_acquire(pixels_in);
+    aie::vector<uint8, 32> p_tmp1 = window_readincr_v32(pixels_in);
+    aie::vector<uint8, 32> p_tmp2 = window_readincr_v32(pixels_in);
+    aie::vector<uint8, 32> p_tmp3 = window_readincr_v32(pixels_in);
+    aie::vector<uint8, 32> p_tmp4 = window_readincr_v32(pixels_in);
+    window_release(pixels_in);
+    const int IPE_ID = p_tmp1.get(0);
 
-    #if ID == 0
-    aie::vector<float, 32> tmp32 = aie::broadcast<float, 32>(n_couples_float);
-    window_acquire(partial_interpol_out);
-    window_writeincr(partial_interpol_out, tmp32);
-    window_writeincr(partial_interpol_out, tmp32);
-    window_release(partial_interpol_out);
+    printf("[%d] mac_top: IPE_ID=%d, n_couples=%d\n", ID, IPE_ID, n_couples);
+
+    // --- sending n_couples to mergers (only if INT_PE > 64) ---
+    #if INT_PE > MAX_INT_PE_PLIOS / 2 && ID == 0
+    if (IPE_ID % 2 == 0) { // sending n_couples only to in0 of out_pixels_merger
+        printf("[%d] sending n_couples=%d\n", IPE_ID, n_couples);
+        writeincr(float_interpolated, (uint8)(n_couples & 0xFF));
+        writeincr(float_interpolated, (uint8)((n_couples >> 8) & 0xFF));
+        writeincr(float_interpolated, (uint8)((n_couples >> 16) & 0xFF));
+        writeincr(float_interpolated, (uint8)((n_couples >> 24) & 0xFF));
+    }
     #endif
 
-    const int N = n_couples >> 5;
-    const int N_class = (N - 1) % INT_PE;
-    const int MULT = (N - 1) / INT_PE; 
-    
-    window_acquire(pixels_in);
-    pixel_left_uint8 = window_readincr_v32(pixels_in);
-    pixel_right_uint8 = window_readincr_v32(pixels_in);
-    window_release(pixels_in);
+    // --- main interpolation loop ---
 
-    const int PE = pixel_left_uint8.get(0);
-    const int acutal_offset = aie_pattern_offsets[N_class][0] * (PE / aie_pattern_offsets[N_class][1]);
-    int actual_pattern[INT_PE];
-    for (int i = 0; i < INT_PE; i++) 
-    chess_loop_count(INT_PE) chess_flatten_loop {
-        int skip_bit = (aie_patterns[N_class][i / 64] >> i) & 1UL;
-        actual_pattern[i] = skip_bit + MULT;
-    }
-
-    constexpr int INT_PE_MASK = INT_PE - 1;
+    const int depth = n_couples / 32;
+    int local_chunk_index = IPE_ID; 
 
     for (int i = 0; i < DIMENSION * DIMENSION; i++)
     chess_loop_range(DIMENSION*DIMENSION,)
     chess_prepare_for_pipelining
     {
-        if (i % 16 == 0) window_acquire(coeff_in);
-        Rcoeff = window_readincr_v4(coeff_in);
-        if (i % 16 == 15) window_release(coeff_in);
+        const int coeff_index = i;
 
-        aie::vector<float, 32> Ri = aie::broadcast<float, 32>(Rcoeff.get(0));
-        aie::vector<float, 32> Ri_inv = aie::broadcast<float, 32>(Rcoeff.get(1));
-        aie::vector<float, 32> j_coeff = aie::broadcast<float, 32>(Rcoeff.get(J_COEFF_INDEX));
+        if (coeff_index % 16 == 0) window_acquire(coeff_in);
+        const aie::vector<float, 4> current_coeff = window_readincr_v4(coeff_in); // read all 4 coefficients at once
+        if (coeff_index % 16 == 15) window_release(coeff_in);
 
-        int internal_loop_size = actual_pattern[(i + acutal_offset) & INT_PE_MASK];
+        // TODO in teoria si potrebbero calcolare tutti i discard in un vector nell'if sopra (all'inizio della depth)
+
+        // computing the range of chunks to which to apply the current coefficients
+        // if the current chunk index is outside the range, we will discard the chunk
+        const int chunk_start = coeff_index * depth;
+        const int chunk_end = chunk_start + depth - 1;
+        const int internal_loop_size = (
+            (local_chunk_index < chunk_start || local_chunk_index > chunk_end) ?
+            0 : 1 + ((chunk_end - local_chunk_index) / INT_PE)
+        );
 
         for (int j = 0; j < internal_loop_size; j += 1)
         chess_loop_range(0,)
         chess_prepare_for_pipelining
         {
+            local_chunk_index += INT_PE;
+
+            aie::vector<float, 32> Ri = aie::broadcast<float, 32>(current_coeff.get(0));
+            aie::vector<float, 32> Ri_inv = aie::broadcast<float, 32>(current_coeff.get(1));
+            aie::vector<float, 32> Rj = aie::broadcast<float, 32>(current_coeff.get(3));
+            aie::vector<float, 32> Rj_inv = aie::broadcast<float, 32>(current_coeff.get(2));
+            
             window_acquire(pixels_in);
-            pixel_left_uint8 = window_readincr_v32(pixels_in);
-            pixel_right_uint8 = window_readincr_v32(pixels_in);
+            aie::vector<uint8, 32> pixel_top_left_uint8 = window_readincr_v32(pixels_in);
+            aie::vector<uint8, 32> pixel_top_right_uint8 = window_readincr_v32(pixels_in);
+            aie::vector<uint8, 32> pixel_bottom_left_uint8 = window_readincr_v32(pixels_in);
+            aie::vector<uint8, 32> pixel_bottom_right_uint8 = window_readincr_v32(pixels_in);
             window_release(pixels_in);
 
-            pixel_left = fromUint8ToFloat32(pixel_left_uint8);
-            pixel_right = fromUint8ToFloat32(pixel_right_uint8);
+            aie::vector<float, 32> pixel_top_left = fromUint8ToFloat32(pixel_top_left_uint8);
+            aie::vector<float, 32> pixel_top_right = fromUint8ToFloat32(pixel_top_right_uint8);
+            aie::vector<float, 32> pixel_bottom_left = fromUint8ToFloat32(pixel_bottom_left_uint8);
+            aie::vector<float, 32> pixel_bottom_right = fromUint8ToFloat32(pixel_bottom_right_uint8);
             
-            auto tmp = aie::mac(aie::mul(pixel_left, Ri_inv), pixel_right, Ri);
-            aie::vector<float, 32> result = aie::mul(tmp.to_vector<float>(), j_coeff);
+            auto prod_ab = aie::mac(aie::mul(pixel_top_left, Ri_inv), pixel_top_right, Ri);
+            aie::vector<float, 32> partial_ab = aie::mul(prod_ab.to_vector<float>(), Rj);
 
-            window_acquire(partial_interpol_out);
-            window_writeincr(partial_interpol_out, result);
-            window_release(partial_interpol_out);
+            auto prod_cd = aie::mac(aie::mul(pixel_bottom_left, Ri_inv), pixel_bottom_right, Ri);
+            aie::vector<float, 32> partial_cd = aie::mul(prod_cd.to_vector<float>(), Rj_inv);
+
+            aie::vector<float, 32> pixel_interpolated_float = aie::add(partial_ab, partial_cd);
+
+            writeincr(float_interpolated, fromFloat32ToUint8(pixel_interpolated_float));
+
         }
     }
 }

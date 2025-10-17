@@ -25,4 +25,4 @@ SOFTWARE.
 #pragma once
 #include <adf.h>
 #include "common.h"
-void mac_top(input_window_uint8* restrict pixels_in, input_window_float* restrict coeff_in, output_window_float* restrict partial_interpol_out);
+void mac_top(input_window_uint8* restrict pixels_in, input_window_float* restrict coeff_in, output_stream<uint8>* restrict partial_interpol_out);
