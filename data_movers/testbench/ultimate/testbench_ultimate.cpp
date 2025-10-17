@@ -33,7 +33,10 @@ SOFTWARE.
 #include "../../fetcher_B.cpp"
 #include "../../fetcher_C.cpp"
 #include "../../fetcher_D.cpp"
-#include "../../setup_interpolator.cpp"
+#include "../../scheduler_IPE.cpp"
+// #include "../../setup_interpolator.cpp"
+// #include "../../pixels_merger.cog.cpp"
+// #include "../../IPEs_merger.cog.cpp"
 #include "../../writer.cpp"
 #include "../../setup_aie.cpp"
 #include "../../setup_mi.cpp"
@@ -64,16 +67,25 @@ typedef ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN> AIE_PIXEL_TYPE;
 typedef ap_uint<INPUT_DATA_BITWIDTH> MI_PIXEL_TYPE;
 typedef ap_axis<COORD_AXIS_W> COORDS_TYPE;
 
+
 void run_aie() {
     std::string command = std::string("make -C ") + AIE_PATH + " aie_simulate_x86";
     std::cout << std::endl << std::flush;
-    system(command.c_str());
+    int r = system(command.c_str());
+    if (r != 0) {
+        std::cerr << "Error running AIE simulation." << std::endl;
+        exit(-1);
+    }
     std::cout << "Done" << std::endl << std::endl;
 }
 
 void create_folder(const std::string& folder) {
     std::string command = std::string("mkdir -p ") + folder;
-    system(command.c_str());
+    int r = system(command.c_str());
+    if (r != 0) {
+        std::cerr << "Error creating folder: " << folder << std::endl;
+        exit(-1);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -105,8 +117,6 @@ int main(int argc, char** argv) {
 
     read_volume_from_file(input_volume, DIMENSION, n_couples, 0, padding, SW_FOLDER("dataset/"));
 
-
-
     //
     // ---------- (1) setup aie ---------- 
     //
@@ -118,25 +128,34 @@ int main(int argc, char** argv) {
     // write fake streams to file
     {
         std::cout << "-> Writing fake streams to file ..." << std::endl;
-        hls::stream<ORIGINAL_PIXEL_TYPE> fake_ab[INT_PE];
-        hls::stream<ORIGINAL_PIXEL_TYPE> fake_cd[INT_PE];
+        hls::stream<ORIGINAL_PIXEL_TYPE> fake_ab[INT_PE_SATURATED];
 
-        for (int i = 0; i < INT_PE; i++) {
+        for (int i = 0; i < INT_PE_SATURATED; i++) {
             fake_ab[i].write(i);
-            fake_cd[i].write(i);
+            for (int j = 0; j < 3; j++) {
+                fake_ab[i].write(0);
+            }
+            for (int j = 0; j < 4; j++) {
+                fake_ab[i].write((n_couples >> 8*j) & 0xFF); // write n_couples as 4 bytes
+            }
+            for (int j = 0; j < 64-8; j++) {
+                fake_ab[i].write(0);
+            }
+
+            // second n_couples chunks, replacing mac_bottom
+            fake_ab[i].write(i);
             for (int j = 0; j < 64-1; j++) {
                 fake_ab[i].write(0);
-                fake_cd[i].write(0);
             }
-            for (int j = 0; j <  2 * DIMENSION * DIMENSION * (n_couples + padding) / INT_PE; j++) {
+
+            int twice = (INT_PE <= 64 ? 1 : 2);
+            for (int j = 0; j < twice * 2 * 2 * DIMENSION * DIMENSION * (n_couples + padding) / INT_PE_SATURATED; j++) {
                 fake_ab[i].write(0);
-                fake_cd[i].write(0);
             }
         }
 
-        for (int i = 0; i < INT_PE; i++) {
+        for (int i = 0; i < INT_PE_SATURATED; i++) {
             write_stream_to_file(fake_ab[i], AIE_FOLDER("data/p_ab_" + std::to_string(i+1) + ".txt"), PLIO_128);
-            write_stream_to_file(fake_cd[i], AIE_FOLDER("data/p_cd_" + std::to_string(i+1) + ".txt"), PLIO_128);
         }
     }
 
@@ -145,6 +164,10 @@ int main(int argc, char** argv) {
     //
     std::printf("-> Running AIE (indexes & coefficients) . . .\n");
     run_aie();
+    
+    // printf("FIRST AIE RUN SKIPPED: READING BACKUP !!!\n");
+    // // return 0;
+
     hls::stream<COORDS_TYPE> out_aie_A("out_aie_A");
     hls::stream<COORDS_TYPE> out_aie_B("out_aie_B");
     hls::stream<COORDS_TYPE> out_aie_C("out_aie_C");
@@ -153,6 +176,10 @@ int main(int argc, char** argv) {
     read_stream_from_file<COORD_AXIS_W>(out_aie_B, AIE_FOLDER("x86simulator_output/data/TR_out.txt"));
     read_stream_from_file<COORD_AXIS_W>(out_aie_C, AIE_FOLDER("x86simulator_output/data/BL_out.txt"));
     read_stream_from_file<COORD_AXIS_W>(out_aie_D, AIE_FOLDER("x86simulator_output/data/BR_out.txt"));
+    // read_stream_from_file<COORD_AXIS_W>(out_aie_A, AIE_FOLDER("x86simulator_output_backup/data/TL_out.txt"));
+    // read_stream_from_file<COORD_AXIS_W>(out_aie_B, AIE_FOLDER("x86simulator_output_backup/data/TR_out.txt"));
+    // read_stream_from_file<COORD_AXIS_W>(out_aie_C, AIE_FOLDER("x86simulator_output_backup/data/BL_out.txt"));
+    // read_stream_from_file<COORD_AXIS_W>(out_aie_D, AIE_FOLDER("x86simulator_output_backup/data/BR_out.txt"));
 
     //
     // ---------- (3) SETUP MUTUAL INFO ----------
@@ -167,80 +194,127 @@ int main(int argc, char** argv) {
     fetcher_C(out_aie_C, out_fetcher_C, (WIDE_PIXEL_TYPE*) input_volume, n_couples + padding);
     fetcher_D(out_aie_D, out_fetcher_D, (WIDE_PIXEL_TYPE*) input_volume, n_couples + padding);
 
-    //
-    // ---------- (4) SETUP INTERPOLATOR ----------
-    //
-    std::printf("-> Running setup_interpolator\n");
-    hls::stream<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN>> out_interpolator_ab[INT_PE];
-    hls::stream<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN>> out_interpolator_cd[INT_PE];
+    // print size of each stream
+    std::printf("Size of out_fetcher_A: %ld\n", out_fetcher_A.size());
+    std::printf("Size of out_fetcher_B: %ld\n", out_fetcher_B.size());
+    std::printf("Size of out_fetcher_C: %ld\n", out_fetcher_C.size());
+    std::printf("Size of out_fetcher_D: %ld\n", out_fetcher_D.size());
 
-    setup_interpolator(
-        out_fetcher_A, out_fetcher_B, 
-        SETUP_INTERPOLATOR_TESTBENCH_CALL(out_interpolator_ab),
-        n_couples + padding
+    // substituting pixel colors
+    // int size_fetcher = out_fetcher_A.size();
+    // // empty all streams
+    // for (int i = 0; i < size_fetcher; i++) {
+    //     WIDE_PIXEL_TYPE pixel_A = out_fetcher_A.read();
+    //     WIDE_PIXEL_TYPE pixel_B = out_fetcher_B.read();
+    //     WIDE_PIXEL_TYPE pixel_C = out_fetcher_C.read();
+    //     WIDE_PIXEL_TYPE pixel_D = out_fetcher_D.read();
+
+    //     // substituting colors
+    //     for (int j = 0; j < NUM_PIXELS_PER_READ; j++) {
+    //         pixel_A.range(8*j + 7, 8*j) = ORIGINAL_PIXEL_TYPE(10);
+    //         pixel_B.range(8*j + 7, 8*j) = ORIGINAL_PIXEL_TYPE(110);
+    //         pixel_C.range(8*j + 7, 8*j) = ORIGINAL_PIXEL_TYPE(190);
+    //         pixel_D.range(8*j + 7, 8*j) = ORIGINAL_PIXEL_TYPE(255);
+    //     }
+
+    //     out_fetcher_A.write(pixel_A);
+    //     out_fetcher_B.write(pixel_B);
+    //     out_fetcher_C.write(pixel_C);
+    //     out_fetcher_D.write(pixel_D);
+    // }
+
+    // write the four streams in data/test_fetcher_A.txt, B.txt, C.txt, D.txt
+    // write_stream_to_file_unpack<WIDE_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_fetcher_A, AIE_FOLDER("data/test_fetcher_A.txt"), PLIO_128);
+    // write_stream_to_file_unpack<WIDE_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_fetcher_B, AIE_FOLDER("data/test_fetcher_B.txt"), PLIO_128);
+    // write_stream_to_file_unpack<WIDE_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_fetcher_C, AIE_FOLDER("data/test_fetcher_C.txt"), PLIO_128);
+    // write_stream_to_file_unpack<WIDE_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_fetcher_D, AIE_FOLDER("data/test_fetcher_D.txt"), PLIO_128);
+    // return 0;
+
+
+    std::printf("-> Running scheduler_IPE\n");
+    hls::stream<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN/2>> out_scheduler_IPE[INT_PE_SATURATED];
+    scheduler_IPE(
+        out_fetcher_A, out_fetcher_B, out_fetcher_C, out_fetcher_D,
+        n_couples + padding,
+        out_scheduler_IPE
     );
-    setup_interpolator(
-        out_fetcher_C, out_fetcher_D, 
-        SETUP_INTERPOLATOR_TESTBENCH_CALL(out_interpolator_cd),
-        n_couples + padding);
-    
-    for (int i = 0; i < INT_PE; i++) {
-        write_stream_to_file_unpack<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN>, ORIGINAL_PIXEL_TYPE>(out_interpolator_ab[i], AIE_FOLDER("data/p_ab_" + std::to_string(i+1) + ".txt"), PLIO_128);
-        write_stream_to_file_unpack<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN>, ORIGINAL_PIXEL_TYPE>(out_interpolator_cd[i], AIE_FOLDER("data/p_cd_" + std::to_string(i+1) + ".txt"), PLIO_128);
+
+    // print remaining data in out_fetcher_A, B, C, D
+    std::printf("Remaining data in fetcher_A: %ld\n", out_fetcher_A.size());
+    std::printf("Remaining data in fetcher_B: %ld\n", out_fetcher_B.size());
+    std::printf("Remaining data in fetcher_C: %ld\n", out_fetcher_C.size());
+    std::printf("Remaining data in fetcher_D: %ld\n", out_fetcher_D.size());
+
+    // print size of each stream in out_scheduler_IPE
+    for (int i = 0; i < INT_PE_SATURATED; i++) {
+        std::printf("Size of out_scheduler_IPE[%d]: %ld\n", i, out_scheduler_IPE[i].size());
     }
+
+    // return 0;
+
+    for (int i = 0; i < INT_PE_SATURATED; i++) {
+        write_stream_to_file_unpack<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN/2>, ORIGINAL_PIXEL_TYPE>(out_scheduler_IPE[i], AIE_FOLDER("data/p_ab_" + std::to_string(i+1) + ".txt"), PLIO_128);
+    }
+
+    // return 0;
 
     //
     // ---------- (5) AIE interpolator ----------
     //
     std::printf("-> Running AIE (interpolator) . . .\n");
     run_aie();
-    hls::stream<AIE_PIXEL_TYPE> out_aie_interpolated[INT_PE];
-    for (int i = 0; i < INT_PE; i++) {
+    hls::stream<AIE_PIXEL_TYPE> out_aie_interpolated[INT_PE_SATURATED/2];
+    for (int i = 0; i < INT_PE_SATURATED/2; i++) {
         read_stream_from_file_pack<ORIGINAL_PIXEL_TYPE, AIE_PIXEL_TYPE>(out_aie_interpolated[i], AIE_FOLDER("x86simulator_output/data/result_" + std::to_string(i+1) + ".txt"));
     }
+
+    // // print size of each stream
+    // for (int i = 0; i < INT_PE_SATURATED; i++) {
+    //     std::printf("Size of out_aie_interpolated[%d]: %ld\n", i, out_aie_interpolated[i].size());
+    // }
+
+    // return 0;
 
     //
     // ---------- (6) writer ----------
     //
-    // std::printf("-> Running writer\n");
-    // writer(
-    //     WRITER_TESTBENCH_CALL(out_aie_interpolated),
-    //     (WIDE_PIXEL_TYPE*)output_volume_hw, 
-    //     n_couples+padding);
+    std::printf("-> Running writer\n");
+    writer(
+        WRITER_TESTBENCH_CALL(out_aie_interpolated),
+        (WIDE_PIXEL_TYPE*)output_volume_hw, 
+        n_couples+padding);
 
     //
     // ---------- (6) setup_mi ----------
-    
-    std::printf("-> Running setup_mi\n");
-    hls::stream<MI_PIXEL_TYPE> out_setup_mi("out_setup_mi");
-    setup_mi(
-        SETUP_MI_TESTBENCH_CALL(out_aie_interpolated), 
-        out_setup_mi,
-        (WIDE_PIXEL_TYPE*) output_volume_hw,
-        n_couples + padding
-    );
+    // std::printf("-> Running setup_mi\n");
+    // hls::stream<MI_PIXEL_TYPE> out_setup_mi("out_setup_mi");
+    // setup_mi(
+    //     SETUP_MI_TESTBENCH_CALL(out_aie_interpolated), 
+    //     out_setup_mi,
+    //     (WIDE_PIXEL_TYPE*) output_volume_hw,
+    //     n_couples + padding
+    // );
 
-    // Salva out_setup_mi in numeri da 1 byte su file
-    // write_stream_to_file_unpack<MI_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_setup_mi, "mi_in.txt" , PLIO_32);
+    // // Salva out_setup_mi in numeri da 1 byte su file
+    // // write_stream_to_file_unpack<MI_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_setup_mi, "mi_in.txt" , PLIO_32);
 
-    //write_stream_to_file_(out_setup_mi, "mi_in.txt", PLIO_32);
-    // ---------- (7) mutual_info ----------
-    //
-    // std::cout << "SIZE: " << out_setup_mi.size() << std::endl;
-    // return 0;
-    printf("Size of stream before: %d\n", out_setup_mi.size());
-
+    // //write_stream_to_file_(out_setup_mi, "mi_in.txt", PLIO_32);
+    // // ---------- (7) mutual_info ----------
+    // //
+    // // std::cout << "SIZE: " << out_setup_mi.size() << std::endl;
+    // // return 0;
+    // printf("Size of stream before: %ld\n", out_setup_mi.size());
 
 
-    std::printf("-> Running mutual_info\n");
+
+    // std::printf("-> Running mutual_info\n");
     float hw_mi;
-
-    //NOTA: Io credo che vada comunque passato n_couples + padding.... ma non sono sicuro. Non cambia nulla ad ora in questo test
     
-    mutual_information_master(out_setup_mi, (MI_PIXEL_TYPE*) input_volume, &hw_mi, n_couples + padding, padding);
-    printf("Size of stream after: %d\n", out_setup_mi.size());
+    // mutual_information_master(out_setup_mi, (MI_PIXEL_TYPE*) input_volume, &hw_mi, n_couples + padding, padding);
+    // // printf("Size of stream after: %d\n", out_setup_mi.size());
 
-    //write_stream_to_file_unpack<MI_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_setup_mi, "leftover.txt" , PLIO_32);
+    // // empty the out_setup_mi stream
+    // write_stream_to_file<MI_PIXEL_TYPE>(out_setup_mi, AIE_FOLDER("data/mi_in.txt"), PLIO_32);
 
 
     // write volume to file
@@ -249,7 +323,7 @@ int main(int argc, char** argv) {
     write_volume_to_file(output_volume_hw, DIMENSION, n_couples, 0, padding, TEST_FOLDER("dataset_output_new/"));
 
     std::cout << "--- TESTBENCH HW COMPLETED ---" << std::endl;
-    return 0;
+    // return 0;
     // ###############################################################################################################################
 
     //

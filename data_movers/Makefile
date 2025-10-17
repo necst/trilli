@@ -33,7 +33,7 @@ help::
 	$(ECHO) "  make clean"
 	$(ECHO) "      Command to remove all the generated files."
 
-PLATFORM := xilinx_vck5000_gen4x8_xdma_2_202210_1
+PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 
 
 TARGET := hw
@@ -49,7 +49,8 @@ XOCCFLAGS := --platform $(PLATFORM) -t $(TARGET)  -s -g
 
 TASK := STEP
 
-XOS := setup_aie_$(TARGET).xo fetcher_A_$(TARGET).xo fetcher_B_$(TARGET).xo fetcher_C_$(TARGET).xo fetcher_D_$(TARGET).xo setup_interpolator_$(TARGET).xo
+# XOS := setup_aie_$(TARGET).xo fetcher_A_$(TARGET).xo fetcher_B_$(TARGET).xo fetcher_C_$(TARGET).xo fetcher_D_$(TARGET).xo setup_interpolator_$(TARGET).xo pixels_merger_$(TARGET).xo
+XOS := setup_aie_$(TARGET).xo fetcher_A_$(TARGET).xo fetcher_B_$(TARGET).xo fetcher_C_$(TARGET).xo fetcher_D_$(TARGET).xo scheduler_IPE_$(TARGET).xo
 ifeq ($(TASK), STEP)
 	XOS += setup_mi_$(TARGET).xo
 else ifeq ($(TASK), TX)
@@ -81,16 +82,16 @@ fetcher_C_$(TARGET).xo: ./fetcher_C.cpp
 fetcher_D_$(TARGET).xo: ./fetcher_D.cpp
 	v++ $(XOCCFLAGS) --kernel fetcher_D -c -o $@ $<
 
-setup_interpolator_$(TARGET).xo: ./setup_interpolator.cpp
-	v++ $(XOCCFLAGS) --kernel setup_interpolator -c -o $@ $<
+# setup_interpolator_$(TARGET).xo: ./setup_interpolator.cpp
+# 	v++ $(XOCCFLAGS) --kernel setup_interpolator -c -o $@ $<
 
 writer_$(TARGET).xo: ./writer.cpp
 	v++ $(XOCCFLAGS) --kernel writer -c -o $@ $<
 
 ################## testbench
 
-testbench/ultimate/testbench_ultimate.exe: testbench/ultimate/testbench_ultimate.cpp ../sw/include/software_mi/software_mi.cpp
-	g++ -std=c++14 -I. -I$(XILINX_HLS)/include -o $@ $^ -O2 `pkg-config --libs opencv` `pkg-config --cflags opencv`
+testbench/ultimate/testbench_ultimate.exe: testbench/ultimate/testbench_ultimate.cpp ../sw/include/software_mi/software_mi.cpp testbench/complete/utils.hpp | scheduler_IPE.cpp
+	g++ -std=c++17 -I. -I$(XILINX_HLS)/include -o $@ $^ -O2
 run_testbench_ultimate: testbench/ultimate/testbench_ultimate.exe
 	cd testbench/ultimate && ./testbench_ultimate.exe $(N_COUPLES)
 run_testbench_ultimate_t: testbench/ultimate/testbench_ultimate.exe
