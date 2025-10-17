@@ -348,6 +348,8 @@ const unsigned int ENTROPY_PE_CONST = ENTROPY_PE;\n \
 //15")
     mi_header.write("\n#endif")
 
+    saturated_interpolator_pe_number = 64 if interpolator_pe_number > 64 else interpolator_pe_number
+
     x = -int(inp_img_dim/2)
     y = x + 32
     init_cols = [str(i) for i in range(x, y)]
@@ -428,6 +430,9 @@ typedef float data_t;
 #define INT_PE {interpolator_pe_number}
 #define INT_PE_EXPO {int(math.log2(interpolator_pe_number))}
 #define DIV_EXPO {int(math.log2(math.ceil(interpolator_pe_number * 32 / num_pixels_per_read)))}
+#define INT_PE_SATURATED {saturated_interpolator_pe_number}
+#define INT_PE_EXPO_SATURATED {int(math.log2(saturated_interpolator_pe_number))}
+#define DIV_EXPO_SATURATED {int(math.log2(math.ceil(saturated_interpolator_pe_number * 32 / num_pixels_per_read)))}
 
 #define AIE_PATTERNS {aie_patterns}
 #define AIE_PATTERN_OFFSETS {aie_offsets}
