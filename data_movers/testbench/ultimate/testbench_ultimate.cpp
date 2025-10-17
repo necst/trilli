@@ -67,6 +67,20 @@ typedef ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN> AIE_PIXEL_TYPE;
 typedef ap_uint<INPUT_DATA_BITWIDTH> MI_PIXEL_TYPE;
 typedef ap_axis<COORD_AXIS_W> COORDS_TYPE;
 
+// saturating num of output plios to MAX_INT_PE_PLIOS
+#if INT_PE == 2 * MAX_INT_PE_PLIOS // mapping 1 plio to 2 IPEs
+#if INT_PE_SATURATED != INT_PE / 2
+#error "Only 1:2 mapping (PLIOs to IPEs) is supported, set INT_PE_SATURATED to INT_PE/2, or INT_PE <= MAX_INT_PE_PLIOS"
+#endif
+#define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
+#define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
+#elif INT_PE < 2 * MAX_INT_PE_PLIOS
+#define NUM_OUTPUT_PLIOS INT_PE / 2
+#define NUM_INPUT_PLIOS INT_PE
+#else
+#error "INT_PE > 2 * MAX_INT_PE_PLIOS not supported"
+#endif
+
 
 void run_aie() {
     std::string command = std::string("make -C ") + AIE_PATH + " aie_simulate_x86";
@@ -128,9 +142,9 @@ int main(int argc, char** argv) {
     // write fake streams to file
     {
         std::cout << "-> Writing fake streams to file ..." << std::endl;
-        hls::stream<ORIGINAL_PIXEL_TYPE> fake_ab[INT_PE_SATURATED];
+        hls::stream<ORIGINAL_PIXEL_TYPE> fake_ab[NUM_INPUT_PLIOS];
 
-        for (int i = 0; i < INT_PE_SATURATED; i++) {
+        for (int i = 0; i < NUM_INPUT_PLIOS; i++) {
             fake_ab[i].write(i);
             for (int j = 0; j < 3; j++) {
                 fake_ab[i].write(0);
@@ -149,12 +163,12 @@ int main(int argc, char** argv) {
             }
 
             int twice = (INT_PE <= 64 ? 1 : 2);
-            for (int j = 0; j < twice * 2 * 2 * DIMENSION * DIMENSION * (n_couples + padding) / INT_PE_SATURATED; j++) {
+            for (int j = 0; j < twice * 2 * 2 * DIMENSION * DIMENSION * (n_couples + padding) / INT_PE; j++) {
                 fake_ab[i].write(0);
             }
         }
 
-        for (int i = 0; i < INT_PE_SATURATED; i++) {
+        for (int i = 0; i < NUM_INPUT_PLIOS; i++) {
             write_stream_to_file(fake_ab[i], AIE_FOLDER("data/p_ab_" + std::to_string(i+1) + ".txt"), PLIO_128);
         }
     }
@@ -232,7 +246,7 @@ int main(int argc, char** argv) {
 
 
     std::printf("-> Running scheduler_IPE\n");
-    hls::stream<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN/2>> out_scheduler_IPE[INT_PE_SATURATED];
+    hls::stream<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN/2>> out_scheduler_IPE[NUM_INPUT_PLIOS];
     scheduler_IPE(
         out_fetcher_A, out_fetcher_B, out_fetcher_C, out_fetcher_D,
         n_couples + padding,
@@ -245,14 +259,15 @@ int main(int argc, char** argv) {
     std::printf("Remaining data in fetcher_C: %ld\n", out_fetcher_C.size());
     std::printf("Remaining data in fetcher_D: %ld\n", out_fetcher_D.size());
 
+    // return 0;
     // print size of each stream in out_scheduler_IPE
-    for (int i = 0; i < INT_PE_SATURATED; i++) {
+    for (int i = 0; i < NUM_INPUT_PLIOS; i++) {
         std::printf("Size of out_scheduler_IPE[%d]: %ld\n", i, out_scheduler_IPE[i].size());
     }
 
     // return 0;
 
-    for (int i = 0; i < INT_PE_SATURATED; i++) {
+    for (int i = 0; i < NUM_INPUT_PLIOS; i++) {
         write_stream_to_file_unpack<ap_uint<INPUT_DATA_BITWIDTH_FETCHER_MIN/2>, ORIGINAL_PIXEL_TYPE>(out_scheduler_IPE[i], AIE_FOLDER("data/p_ab_" + std::to_string(i+1) + ".txt"), PLIO_128);
     }
 
@@ -263,8 +278,8 @@ int main(int argc, char** argv) {
     //
     std::printf("-> Running AIE (interpolator) . . .\n");
     run_aie();
-    hls::stream<AIE_PIXEL_TYPE> out_aie_interpolated[INT_PE_SATURATED/2];
-    for (int i = 0; i < INT_PE_SATURATED/2; i++) {
+    hls::stream<AIE_PIXEL_TYPE> out_aie_interpolated[NUM_OUTPUT_PLIOS];
+    for (int i = 0; i < NUM_OUTPUT_PLIOS; i++) {
         read_stream_from_file_pack<ORIGINAL_PIXEL_TYPE, AIE_PIXEL_TYPE>(out_aie_interpolated[i], AIE_FOLDER("x86simulator_output/data/result_" + std::to_string(i+1) + ".txt"));
     }
 

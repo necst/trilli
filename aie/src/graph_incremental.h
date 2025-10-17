@@ -37,7 +37,7 @@ SOFTWARE.
 // #include "kernel_adder.h"
 #include "kernel_mac_top.h"
 #include "kernel_out_pixels_merger.h"
-#include "kernel_in_pixels_splitter.h"
+// #include "kernel_in_pixels_splitter.h"
 // #include "kernel_mac_bottom.h"
 #include "kernel_merger_1_i.h"
 #include "kernel_merger_1_j.h"
@@ -55,7 +55,7 @@ using namespace adf;
 #endif
 #define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
 #define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
-#elif INT_PE <= MAX_INT_PE_PLIOS
+#elif INT_PE < 2 * MAX_INT_PE_PLIOS
 #define NUM_OUTPUT_PLIOS INT_PE / 2
 #define NUM_INPUT_PLIOS INT_PE
 #else
@@ -105,10 +105,10 @@ private:
 #if ENABLE_GRAPH_INTERPOLATION
     kernel k_mac_top[INT_PE];
     #if INT_PE > MAX_INT_PE_PLIOS
-    kernel k_in_pixels_splitter[INT_PE_SATURATED];
+//     kernel k_in_pixels_splitter[INT_PE_SATURATED];
     #endif
-    #if INT_PE > MAX_INT_PE_PLIOS / 2
-    kernel k_out_pixels_merger[INT_PE_SATURATED / 2];
+    #if NUM_OUTPUT_PLIOS < INT_PE
+    kernel k_out_pixels_merger[NUM_OUTPUT_PLIOS];
     #endif
 #endif
 
@@ -193,13 +193,13 @@ public:
         }
 
         #if INT_PE > MAX_INT_PE_PLIOS
-        for (int i = 0; i < INT_PE_SATURATED; i++) {
-            k_in_pixels_splitter[i] = kernel::create(in_pixels_splitter);  
-        }
+        // for (int i = 0; i < INT_PE_SATURATED; i++) {
+        //     k_in_pixels_splitter[i] = kernel::create(in_pixels_splitter);  
+        // }
         #endif
 
-        #if INT_PE > MAX_INT_PE_PLIOS / 2
-        for (int i = 0; i < INT_PE_SATURATED / 2; i++) {
+        #if NUM_OUTPUT_PLIOS < INT_PE
+        for (int i = 0; i < NUM_OUTPUT_PLIOS; i++) {
             k_out_pixels_merger[i] = kernel::create(out_pixels_merger);
         }
         #endif
@@ -324,24 +324,27 @@ public:
         }
 
         // PLIO p_ab -> mac
-        #if INT_PE <= MAX_INT_PE_PLIOS
+        // #if INT_PE <= MAX_INT_PE_PLIOS
         for (int i = 0; i < INT_PE; i++) {
             connect<window<WINDOW_PIXEL_IN_SIZE>>(p_ab[i].out[0], async(k_mac_top[i].in[0]));
         }        
-        #else
-        for (int i = 0; i < INT_PE; i += 2) {
-            connect<window<WINDOW_PIXEL_IN_SIZE>>(p_ab[i / 2].out[0], async(k_in_pixels_splitter[i / 2].in[0]));
-            connect<window<WINDOW_PIXEL_IN_SIZE>>(async(k_in_pixels_splitter[i / 2].out[0]), async(k_mac_top[i].in[0]));
-            connect<window<WINDOW_PIXEL_IN_SIZE>>(async(k_in_pixels_splitter[i / 2].out[1]), async(k_mac_top[i + 1].in[0]));
-        }
-        #endif
+        // #else
+        // for (int i = 0; i < INT_PE; i += 2) {
+        //     connect<window<WINDOW_PIXEL_IN_SIZE>>(p_ab[i / 2].out[0], async(k_in_pixels_splitter[i / 2].in[0]));
+        //     connect<window<WINDOW_PIXEL_IN_SIZE>>(async(k_in_pixels_splitter[i / 2].out[0]), async(k_mac_top[i].in[0]));
+        //     connect<window<WINDOW_PIXEL_IN_SIZE>>(async(k_in_pixels_splitter[i / 2].out[1]), async(k_mac_top[i + 1].in[0]));
+        // }
+        // #endif
 
         // mac --> PLIO result
-        #if INT_PE <= MAX_INT_PE_PLIOS / 2
+        #if NUM_OUTPUT_PLIOS == INT_PE
         for (int i = 0; i < INT_PE; i++) {
                 connect<stream>(k_mac_top[i].out[0], result[i].in[0]);
         }
         #else
+        #if NUM_OUTPUT_PLIOS != INT_PE / 2
+            #error "Only 1:2 mapping (PLIOs to IPEs) is supported, set INT_PE_SATURATED to INT_PE/2, or INT_PE <= MAX_INT_PE_PLIOS"
+        #endif
         for (int i = 0; i < INT_PE; i += 2) {
             connect<stream>(k_mac_top[i].out[0],     k_out_pixels_merger[i / 2].in[0]);
             connect<stream>(k_mac_top[i + 1].out[0], k_out_pixels_merger[i / 2].in[1]);
@@ -437,17 +440,17 @@ public:
             runtime<ratio>(k_mac_top[i]) = COMMON_RUNTIME_RATIO;
         }
 
-        #if INT_PE > MAX_INT_PE_PLIOS
-        for (int i = 0; i < INT_PE / 2; i++) {
-            source(k_in_pixels_splitter[i])  = "src/kernel_in_pixels_splitter.cpp";
-            headers(k_in_pixels_splitter[i]) = {"src/kernel_in_pixels_splitter.h","../common/common.h"};
+        // #if INT_PE > MAX_INT_PE_PLIOS
+        // for (int i = 0; i < INT_PE / 2; i++) {
+        //     source(k_in_pixels_splitter[i])  = "src/kernel_in_pixels_splitter.cpp";
+        //     headers(k_in_pixels_splitter[i]) = {"src/kernel_in_pixels_splitter.h","../common/common.h"};
 
-            runtime<ratio>(k_in_pixels_splitter[i]) = COMMON_RUNTIME_RATIO;
-        }
-        #endif
+        //     runtime<ratio>(k_in_pixels_splitter[i]) = COMMON_RUNTIME_RATIO;
+        // }
+        // #endif
 
-        #if INT_PE > MAX_INT_PE_PLIOS / 2
-        for (int i = 0; i < INT_PE / 2; i++) {
+        #if NUM_OUTPUT_PLIOS < INT_PE
+        for (int i = 0; i < NUM_OUTPUT_PLIOS; i++) {
             source(k_out_pixels_merger[i])  = "src/kernel_out_pixels_merger.cpp";
             headers(k_out_pixels_merger[i]) = {"src/kernel_out_pixels_merger.h","../common/common.h"};
 

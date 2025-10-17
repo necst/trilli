@@ -90,7 +90,7 @@ writer_$(TARGET).xo: ./writer.cpp
 
 ################## testbench
 
-testbench/ultimate/testbench_ultimate.exe: testbench/ultimate/testbench_ultimate.cpp ../sw/include/software_mi/software_mi.cpp testbench/complete/utils.hpp | scheduler_IPE.cpp
+testbench/ultimate/testbench_ultimate.exe: testbench/ultimate/testbench_ultimate.cpp ../sw/include/software_mi/software_mi.cpp testbench/utils.hpp | scheduler_IPE.cpp
 	g++ -std=c++17 -I. -I$(XILINX_HLS)/include -o $@ $^ -O2
 run_testbench_ultimate: testbench/ultimate/testbench_ultimate.exe
 	cd testbench/ultimate && ./testbench_ultimate.exe $(N_COUPLES)

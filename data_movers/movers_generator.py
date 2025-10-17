@@ -326,7 +326,8 @@ setup_interpolator_file = open("setup_interpolator_body.hpp", "w")
 setup_interpolator_lines = generate_write(arg_IPE, arg_BI)
 setup_interpolator_file.write("\n".join(setup_interpolator_lines))
 
-saturated_arg_IPE = 64 if arg_IPE > 64 else arg_IPE
+# saturated_arg_IPE = 64 if arg_IPE > 64 else arg_IPE
+saturated_arg_IPE = arg_IPE // 2
 
 writer_file = open("writer_body.hpp", "w")
 writer_lines = generate_read(saturated_arg_IPE, arg_BI, saturated_arg_IPE < arg_IPE)
