@@ -26,7 +26,7 @@ ECHO=@echo
 
 APP_NAME ?= trilli_app
 TARGET := hw
-PLATFORM := xilinx_vck5000_gen4x8_xdma_2_202210_1
+PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 
 help::
 	$(ECHO) "Makefile Usage:"
@@ -76,6 +76,7 @@ config:
 	$(info using config file $(CONFIG))
 	$(info )
 	$(info ************ Generating configuration files ************)
+	$(info - TASK             $(TASK))
 	$(info - DIMENSION        $(DIMENSION))
 	$(info - N_COUPLES        $(N_COUPLES))
 	$(info - N_COUPLES_MAX    $(N_COUPLES_MAX))
@@ -83,9 +84,10 @@ config:
 	$(info - ENTROPY_PE       $(ENTROPY_PE))
 	$(info - INT_PE           $(INT_PE))
 	$(info - PIXELS_PER_READ  $(PIXELS_PER_READ))
+	$(info - DS_PE            $(DS_PE))
 	$(info ********************************************************)
 	$(info )
-	cd common/generator && python3 generator.py -vts -id $(DIMENSION) -ncm $(N_COUPLES_MAX) -pe $(HIST_PE) -pen $(ENTROPY_PE) -intpe $(INT_PE) -op ../ -ppr $(PIXELS_PER_READ)
+	cd common/generator && python3 generator.py -vts -id $(DIMENSION) -ncm $(N_COUPLES_MAX) -pe $(HIST_PE) -pen $(ENTROPY_PE) -intpe $(INT_PE) -op ../ -ppr $(PIXELS_PER_READ) -dspe $(DS_PE)
 	mv common/mutual_info.hpp mutual_info/include/hw/mutualInfo
 	make -C ./aie generate_input_data
 	make -C ./hw generate_config
@@ -145,6 +147,16 @@ pack_app: build_app
 	$(info Packed application in build/$(NAME)/ using bitstream $(XCLBIN))
 	$(info )
 
+pack_for_hacc:
+	mkdir -p build/hacc/$(NAME)/sw
+	cp -r sw/dataset build/hacc/$(NAME)/sw/
+	cp -r sw/include build/hacc/$(NAME)/sw/
+	cp -r sw/host_code.cpp build/hacc/$(NAME)/sw/
+	cp -r sw/Makefile build/hacc/$(NAME)/sw/
+	cp -r hw/overlay_hw.xclbin build/hacc/$(NAME)/sw/
+	cp -r common build/hacc/$(NAME)/
+	cp default.cfg build/hacc/$(NAME)/
+	cp Makefile build/hacc/$(NAME)/
 
 build_and_pack_app:
 	$(info )
