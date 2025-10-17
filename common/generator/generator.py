@@ -26,75 +26,75 @@ import numpy
 import math
 ###################################################################################################################################
 
-def coord_idx_generator(i, id, chunks, pe):
-  return math.floor((pe*i + id) / chunks)
+# def coord_idx_generator(i, id, chunks, pe):
+#   return math.floor((pe*i + id) / chunks)
 
-def generate_pattern(NUM_INT_PE, aie_idx):
-  all_loops = []
-  for j in range (1, NUM_INT_PE+1):
-    loops = [0 for i in range(0, NUM_INT_PE)]
-    for i in range(0, NUM_INT_PE):
-      q = coord_idx_generator(i, aie_idx, j, NUM_INT_PE)
-      if q < NUM_INT_PE:
-        loops[q] = 1
-    all_loops.append(loops)
-  return all_loops
+# def generate_pattern(NUM_INT_PE, aie_idx):
+#   all_loops = []
+#   for j in range (1, NUM_INT_PE+1):
+#     loops = [0 for i in range(0, NUM_INT_PE)]
+#     for i in range(0, NUM_INT_PE):
+#       q = coord_idx_generator(i, aie_idx, j, NUM_INT_PE)
+#       if q < NUM_INT_PE:
+#         loops[q] = 1
+#     all_loops.append(loops)
+#   return all_loops
 
-def find_shift(sequence1, sequence2):
-  # Ensure sequences have the same length
-  assert len(sequence1) == len(sequence2), "Sequences must have the same length"
+# def find_shift(sequence1, sequence2):
+#   # Ensure sequences have the same length
+#   assert len(sequence1) == len(sequence2), "Sequences must have the same length"
 
-  sequence1 = sequence1 * 3
+#   sequence1 = sequence1 * 3
 
-  for shift in range (0, len(sequence2)):
-    shifted = sequence1[shift:len(sequence2)+shift]
-    if shifted == sequence2:
-      return shift
-  return None
+#   for shift in range (0, len(sequence2)):
+#     shifted = sequence1[shift:len(sequence2)+shift]
+#     if shifted == sequence2:
+#       return shift
+#   return None
 
-def convert_to_MSWLSW(bitarray):
-    LSW = 0
-    MSW = 0
+# def convert_to_MSWLSW(bitarray):
+#     LSW = 0
+#     MSW = 0
 
-    r = 128 - len(bitarray)
-    assert r >= 0, "too many bits"
+#     r = 128 - len(bitarray)
+#     assert r >= 0, "too many bits"
     
-    bitarray = bitarray + [0] * r
+#     bitarray = bitarray + [0] * r
 
-    for i, b in enumerate(bitarray):
-        if i < 64:
-            LSW += 2**i if b else 0
-        else:
-            MSW += 2**(i-64) if b else 0
+#     for i, b in enumerate(bitarray):
+#         if i < 64:
+#             LSW += 2**i if b else 0
+#         else:
+#             MSW += 2**(i-64) if b else 0
     
-    return f"{{{LSW}ULL, {MSW}ULL}}"
+#     return f"{{{LSW}ULL, {MSW}ULL}}"
 
 
 
-def generate_patterns_and_offsets(NUM_INT_PE):
-    all_patterns = [generate_pattern(NUM_INT_PE, i) for i in range(0, NUM_INT_PE)] # [AIE][N_class][seq]
-    offsets = []
+# def generate_patterns_and_offsets(NUM_INT_PE):
+#     all_patterns = [generate_pattern(NUM_INT_PE, i) for i in range(0, NUM_INT_PE)] # [AIE][N_class][seq]
+#     offsets = []
     
-    if NUM_INT_PE == 1:
-        return '[[1UL, 0UL]]', [[0, 1]], all_patterns[0]
+#     if NUM_INT_PE == 1:
+#         return '[[1UL, 0UL]]', [[0, 1]], all_patterns[0]
 
-    for N_class in range(0, NUM_INT_PE):
-        base_shift = 0
-        shift = 0
-        equal_count = 1
-        for aie_idx in range(1, NUM_INT_PE):
-            shift = find_shift(all_patterns[0][N_class], all_patterns[aie_idx][N_class])
-            if shift == base_shift:
-                equal_count += 1
-            else:
-                break
-        offsets.append([shift, equal_count])
+#     for N_class in range(0, NUM_INT_PE):
+#         base_shift = 0
+#         shift = 0
+#         equal_count = 1
+#         for aie_idx in range(1, NUM_INT_PE):
+#             shift = find_shift(all_patterns[0][N_class], all_patterns[aie_idx][N_class])
+#             if shift == base_shift:
+#                 equal_count += 1
+#             else:
+#                 break
+#         offsets.append([shift, equal_count])
 
-    converted_patterns = '[' + ', '.join([convert_to_MSWLSW(p) for p in all_patterns[0]]) + ']'
+#     converted_patterns = '[' + ', '.join([convert_to_MSWLSW(p) for p in all_patterns[0]]) + ']'
 
-    return converted_patterns, offsets, all_patterns[0]
+#     return converted_patterns, offsets, all_patterns[0]
 
-def print_mi_config(num_pe, inp_img_bits, inp_img_dim,  derived , pe_entropy, fixed, caching, uram, vitis, out_path, pixels_per_read, interpolator_pe_number):
+def print_mi_config(num_pe, inp_img_bits, inp_img_dim,  derived , pe_entropy, fixed, caching, uram, vitis, out_path, pixels_per_read, interpolator_pe_number, datascheduler_pe_number, max_intpe_plios):
     if fixed:
         fixerd_or_not=""
     else:
@@ -348,7 +348,11 @@ const unsigned int ENTROPY_PE_CONST = ENTROPY_PE;\n \
 //15")
     mi_header.write("\n#endif")
 
-    saturated_interpolator_pe_number = 64 if interpolator_pe_number > 64 else interpolator_pe_number
+    ds_pe = datascheduler_pe_number
+    int_pe_per_ds = interpolator_pe_number // ds_pe # forse saturated?
+    int_pe_per_ds_expo = int(math.log2(int_pe_per_ds))
+
+    saturated_interpolator_pe_number = max_intpe_plios if interpolator_pe_number > max_intpe_plios else interpolator_pe_number
 
     x = -int(inp_img_dim/2)
     y = x + 32
@@ -361,7 +365,7 @@ const unsigned int ENTROPY_PE_CONST = ENTROPY_PE;\n \
     input_db_fetcher = 8 * num_pixels_per_read
     input_db_fetcher_min = 8 * 32
 
-    aie_patterns, aie_offsets, _ = generate_patterns_and_offsets(interpolator_pe_number)
+    aie_patterns, aie_offsets, _ = (0, 0, 0)
     
     aie_patterns = str(aie_patterns).replace("[", "{").replace("]", "}")
     aie_offsets = str(aie_offsets).replace("[", "{").replace("]", "}")
@@ -411,7 +415,8 @@ typedef float data_t;
 #define INPUT_DATA_BITWIDTH (HIST_PE*UNPACK_DATA_BITWIDTH)
 // #define INPUT_DATA_BITWIDTH_INTERP {input_db_interp} // TODO remove (use INPUT_DATA_BITWIDTH_FETCHER instead)
 #define INPUT_DATA_BITWIDTH_FETCHER {input_db_fetcher}
-#define INPUT_DATA_BITWIDTH_FETCHER_MIN {input_db_fetcher_min}
+#define INPUT_DATA_BITWIDTH_FETCHER_MIN {input_db_fetcher_min} // DEPRECATED, use CHUNK_SIZE instead
+#define CHUNK_SIZE {input_db_fetcher_min} // same as INPUT_DATA_BITWIDTH_FETCHER_MIN
 #define NUM_PIXELS_PER_READ {num_pixels_per_read}
 #define NUM_PIXELS_PER_READ_EXPO {int(math.log2(num_pixels_per_read))}
 #define NUM_INPUT_DATA (DIMENSION*DIMENSION/(HIST_PE))
@@ -427,6 +432,8 @@ typedef float data_t;
 #define INIT_COLS {init_cols_str} // the initial columns for the aie tiles
 
 #define ENTROPY_PE {pe_entropy}
+
+#define MAX_INT_PE_PLIOS {max_intpe_plios} // max number of PLIOS towards and from AIE interpolator PEs
 #define INT_PE {interpolator_pe_number}
 #define INT_PE_EXPO {int(math.log2(interpolator_pe_number))}
 #define DIV_EXPO {int(math.log2(math.ceil(interpolator_pe_number * 32 / num_pixels_per_read)))}
@@ -436,6 +443,11 @@ typedef float data_t;
 
 #define AIE_PATTERNS {aie_patterns}
 #define AIE_PATTERN_OFFSETS {aie_offsets}
+
+#define DS_PE {ds_pe} // number of data-scheduler PEs (scheduler_IPE)
+#define DS_PE_MASK (DS_PE - 1)
+#define INT_PE_PER_DS {int_pe_per_ds} // number of IPEs per data-scheduler PE
+#define INT_PE_PER_DS_EXPO {int_pe_per_ds_expo}
 
 #define COORD_BITWIDTH 32
 
@@ -550,7 +562,9 @@ def main():
     # parser.add_argument("-sr", "--size_rows", help="number of rows per aie", default='512', type=int)     # TODO decommentare se serve
     # parser.add_argument("-sc", "--size_cols", help="number of columns per aie", default='32', type=int)   # TODO decommentare se serve
     parser.add_argument("-ppr", "--pixels_per_read", help="number of pixels read in one transaction", default='32', type=int)
+    parser.add_argument("-dspe", "--datascheduler_pe_number", help="number of IPE data scheduler", default='1', type=int)
     parser.add_argument("-intpe", "--interpolator_pe_number", nargs='?', help='number of AIE interpolator PEs, default 1', default='1', type=int)
+    parser.add_argument("-maxintplio", "--max_intpe_plios", nargs='?', help='max number of PLIOS towards and from AIE interpolator PEs, default 128', default='128', type=int)
     args = parser.parse_args()
     derived = ParametersDerived()
     derived.derive(args.in_dim, args.in_bits, args.bin_val, args.pe_number, args.entr_acc_size, args.histotype, args.n_couples_max)
@@ -564,7 +578,9 @@ def main():
     print_mi_config(args.pe_number, args.in_bits ,\
         args.in_dim,  derived, args.pe_entropy, \
         fixed, args.cache_mem, args.use_uram, args.vitis, args.out_path, \
-        args.pixels_per_read, args.interpolator_pe_number)
+        args.pixels_per_read, args.interpolator_pe_number, \
+        args.datascheduler_pe_number,
+        args.max_intpe_plios)
 
 if __name__== "__main__":
     main()
