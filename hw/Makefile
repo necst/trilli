@@ -36,10 +36,11 @@ help::
 	$(ECHO) "      Command to remove all the generated files."
 	$(ECHO) ""
 
-PLATFORM := xilinx_vck5000_gen4x8_xdma_2_202210_1
+PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 TARGET := hw
 
-XOCCLFLAGS := --kernel_frequency 250 --platform $(PLATFORM) -t $(TARGET)  -s -g
+FREQUENCY := 250
+XOCCLFLAGS := --kernel_frequency $(FREQUENCY) --platform $(PLATFORM) -t $(TARGET)  -s -g
 
 AIE_OBJ := ../aie/libadf.a
 XOS     := ../data_movers/setup_aie_$(TARGET).xo 
@@ -47,7 +48,9 @@ XOS     += ../data_movers/fetcher_A_$(TARGET).xo
 XOS     += ../data_movers/fetcher_B_$(TARGET).xo
 XOS     += ../data_movers/fetcher_C_$(TARGET).xo
 XOS     += ../data_movers/fetcher_D_$(TARGET).xo
-XOS 	+= ../data_movers/setup_interpolator_$(TARGET).xo
+XOS     += ../data_movers/scheduler_IPE_$(TARGET).xo
+# XOS 	+= ../data_movers/setup_interpolator_$(TARGET).xo
+# XOS 	+= ../data_movers/pixels_merger_$(TARGET).xo
 
 
 XSA_OBJ := overlay_$(TARGET).xsa

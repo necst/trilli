@@ -34,6 +34,7 @@ def main():
     args = parser.parse_args()
 
     interpolator_pe_number = args.interpolator_pe_number
+    saturated_interpolator_pe_number = 128 if interpolator_pe_number > 128 else interpolator_pe_number
 
     config_file_in = open(args.input_template, "r")
     config_file_out = open(args.output_cfg, "w")
@@ -52,16 +53,15 @@ def main():
 
             if var_name == "AIE_TO_WRITER":
                 lines[idx] = ""
-                for i in range(1, interpolator_pe_number + 1):
+                for i in range(1, (saturated_interpolator_pe_number//2) + 1):
                     if task == "STEP":
                         lines[idx] += "stream_connect = ai_engine_0.result_" + str(i) + ":setup_mi_0.pixels_in_" + str(i) + " # only for INT_PE>=" + str(i) + "  (automatically placed by config_generator.py)\n"
                     elif task == "TX":
                         lines[idx] += "stream_connect = ai_engine_0.result_" + str(i) + ":writer_0.pixels_in_" + str(i) + " # only for INT_PE>=" + str(i) + "  (automatically placed by config_generator.py)\n"
             elif var_name == "SINT_TO_AIE":
                 lines[idx] = ""
-                for i in range(1, interpolator_pe_number + 1):
-                    lines[idx] += "stream_connect = setup_interpolator_0.out_" + str(i) + ":ai_engine_0.p_ab_" + str(i) + " # only for INT_PE>=" + str(i) + "  (automatically placed by config_generator.py)\n"
-                    lines[idx] += "stream_connect = setup_interpolator_1.out_" + str(i) + ":ai_engine_0.p_cd_" + str(i) + " # only for INT_PE>=" + str(i) + "  (automatically placed by config_generator.py)\n"
+                for i in range(0, saturated_interpolator_pe_number):
+                    lines[idx] += f"stream_connect = scheduler_IPE_0.out_to_plio_{i}:ai_engine_0.p_ab_{i+1} # (automatically placed by config_generator.py)\n"
             else:
                 print("Error: variable \"" + var_name + "\" not recognized")
                 exit(1)
