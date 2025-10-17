@@ -40,6 +40,9 @@ SOFTWARE.
 // args indexes for setup_interpolation kernel
 #define arg_setinterpol_in_n_couples 3 + INT_PE - 1
 
+// args indexes for pixels_merger kernel
+#define arg_pixels_merger_in_n_couples 3 * INT_PE
+
 // args indexes for writer kernel
 #define arg_writer_out_interpolated_ptr 1 + INT_PE - 1
 #define arg_writer_in_n_couples 2 + INT_PE - 1
@@ -79,6 +82,7 @@ public:
     xrt::kernel krnl_fetcher_D;
     xrt::kernel krnl_setup_interpol;
     xrt::kernel krnl_setup_interpol_2;
+    xrt::kernel krnl_pixels_merger;
     xrt::kernel krnl_setup_mi;
     xrt::kernel krnl_mutual_info;
 
@@ -106,6 +110,7 @@ public:
     xrt::run run_fetcher_D;
     xrt::run run_setup_interpol;
     xrt::run run_setup_interpol_2;
+    xrt::run run_pixels_merger;
     xrt::run run_setup_mi;
     xrt::run run_mutual_info;
 
@@ -127,6 +132,7 @@ public:
         krnl_fetcher_D   = xrt::kernel(device, xclbin_uuid, "fetcher_D");
         krnl_setup_interpol= xrt::kernel(device, xclbin_uuid, "setup_interpolator:{setup_interpolator_0}");
         krnl_setup_interpol_2= xrt::kernel(device, xclbin_uuid, "setup_interpolator:{setup_interpolator_1}");
+        krnl_pixels_merger = xrt::kernel(device, xclbin_uuid, "pixels_merger");
         krnl_setup_mi = xrt::kernel(device, xclbin_uuid, "setup_mi");
         krnl_mutual_info = xrt::kernel(device, xclbin_uuid, "mutual_information_master");
 
@@ -161,6 +167,7 @@ public:
         run_setup_interpol_2 = xrt::run(krnl_setup_interpol_2);
         run_setup_mi = xrt::run(krnl_setup_mi);
         run_mutual_info = xrt::run(krnl_mutual_info);
+        run_pixels_merger = xrt::run(krnl_pixels_merger);
         
 
         // run_suppmi = xrt::run(krnl_suppmi);
@@ -179,6 +186,9 @@ public:
         // set setup_interpol kernel arguments
         run_setup_interpol.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
         run_setup_interpol_2.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
+
+        // set pixels_merger kernel arguments
+        run_pixels_merger.set_arg(arg_pixels_merger_in_n_couples, n_couples+padding);
 
         // set setup mi kernel arguments
         run_setup_mi.set_arg(arg_setup_mi_pixel_out, buffer_setup_mi_flt_transformed);
@@ -273,11 +283,13 @@ public:
         run_fetcher_D.start();
         run_setup_interpol.start();
         run_setup_interpol_2.start();
+        run_pixels_merger.start();
         run_setup_mi.start();
         run_mutual_info.start();
 
         run_mutual_info.wait();
         run_setup_mi.wait();
+        run_pixels_merger.wait();
         run_setup_interpol.wait();
         run_setup_interpol_2.wait();
         run_fetcher_A.wait();

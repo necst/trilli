@@ -38,11 +38,20 @@ SOFTWARE.
 #define arg_fetcher_in_n_couples 3
 
 // args indexes for setup_interpolation kernel
-#define arg_setinterpol_in_n_couples 3 + INT_PE - 1
+// #define arg_setinterpol_in_n_couples 3 + INT_PE - 1
+
+// // args indexes for pixels_merger kernel
+// #define arg_pixels_merger_in_n_couples 3 * INT_PE
+
+// // args indexes for IPEs_merger kernel
+// #define arg_IPEs_merger_in_n_couples 3 * INT_PE_SATURATED
+
+// args indexes for scheduler_IPE kernel
+#define arg_scheduler_IPE_in_n_couples 4
 
 // args indexes for writer kernel
-#define arg_writer_out_interpolated_ptr 1 + INT_PE - 1
-#define arg_writer_in_n_couples 2 + INT_PE - 1
+#define arg_writer_out_interpolated_ptr 1 + INT_PE_SATURATED - 1
+#define arg_writer_in_n_couples 2 + INT_PE_SATURATED - 1
 
 // args indexes for support_mi kernel
 // #define arg_support_mi_out_coord_ptr 3
@@ -77,8 +86,11 @@ public:
     xrt::kernel krnl_fetcher_B;
     xrt::kernel krnl_fetcher_C;
     xrt::kernel krnl_fetcher_D;
-    xrt::kernel krnl_setup_interpol;
-    xrt::kernel krnl_setup_interpol_2;
+    // xrt::kernel krnl_setup_interpol;
+    // xrt::kernel krnl_setup_interpol_2;
+    // xrt::kernel krnl_pixels_merger;
+    // xrt::kernel krnl_IPEs_merger;
+    xrt::kernel krnl_scheduler_IPE;
     xrt::kernel krnl_writer;
     // xrt::kernel krnl_suppmi;
     //xrt::kernel krnl_mover_T1B;
@@ -108,8 +120,11 @@ public:
     xrt::run run_fetcher_B;
     xrt::run run_fetcher_C;
     xrt::run run_fetcher_D;
-    xrt::run run_setup_interpol;
-    xrt::run run_setup_interpol_2;
+    // xrt::run run_setup_interpol;
+    // xrt::run run_setup_interpol_2;
+    // xrt::run run_pixels_merger;
+    // xrt::run run_IPEs_merger;
+    xrt::run run_scheduler_IPE;
     xrt::run run_writer;
     // xrt::run run_suppmi;
     //xrt::run run_mover_T1B;
@@ -130,8 +145,11 @@ public:
         krnl_fetcher_B   = xrt::kernel(device, xclbin_uuid, "fetcher_B");
         krnl_fetcher_C   = xrt::kernel(device, xclbin_uuid, "fetcher_C");
         krnl_fetcher_D   = xrt::kernel(device, xclbin_uuid, "fetcher_D");
-        krnl_setup_interpol= xrt::kernel(device, xclbin_uuid, "setup_interpolator");
-        krnl_setup_interpol_2= xrt::kernel(device, xclbin_uuid, "setup_interpolator");
+        // krnl_setup_interpol= xrt::kernel(device, xclbin_uuid, "setup_interpolator");
+        // krnl_setup_interpol_2= xrt::kernel(device, xclbin_uuid, "setup_interpolator");
+        // krnl_pixels_merger = xrt::kernel(device, xclbin_uuid, "pixels_merger");
+        // krnl_IPEs_merger = xrt::kernel(device, xclbin_uuid, "IPEs_merger");
+        krnl_scheduler_IPE = xrt::kernel(device, xclbin_uuid, "scheduler_IPE");
         krnl_writer     = xrt::kernel(device, xclbin_uuid, "writer");
         // krnl_suppmi = xrt::kernel(device, xclbin_uuid, "support_mi");
         //krnl_mover_T1B  = xrt::kernel(device, xclbin_uuid, "mover_T1B");
@@ -169,9 +187,13 @@ public:
         run_fetcher_B = xrt::run(krnl_fetcher_B);
         run_fetcher_C = xrt::run(krnl_fetcher_C);
         run_fetcher_D = xrt::run(krnl_fetcher_D);
-        run_setup_interpol = xrt::run(krnl_setup_interpol);
-        run_setup_interpol_2 = xrt::run(krnl_setup_interpol_2);
+        // run_setup_interpol = xrt::run(krnl_setup_interpol);
+        // run_setup_interpol_2 = xrt::run(krnl_setup_interpol_2);
+        // run_pixels_merger = xrt::run(krnl_pixels_merger);
+        // run_IPEs_merger = xrt::run(krnl_IPEs_merger);
+        run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_writer      = xrt::run(krnl_writer);
+
         // run_suppmi = xrt::run(krnl_suppmi);
         //run_mover_T1B = xrt::run(krnl_mover_T1B);
         std::cout << "Run created" << std::endl;
@@ -185,9 +207,19 @@ public:
         run_fetcher_D.set_arg(arg_fetcher_in_flt_original_ptr, buffer_fetcher_D_flt_in);
         run_fetcher_D.set_arg(arg_fetcher_in_n_couples, n_couples+padding);
 
-        // set setup_interpol kernel arguments
-        run_setup_interpol.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
-        run_setup_interpol_2.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
+        // // set setup_interpol kernel arguments
+        // run_setup_interpol.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
+        // run_setup_interpol_2.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
+
+        // // set pixels_merger kernel arguments
+        // run_pixels_merger.set_arg(arg_pixels_merger_in_n_couples, n_couples+padding);
+
+        // // set IPEs_merger kernel arguments
+        // run_IPEs_merger.set_arg(arg_IPEs_merger_in_n_couples, n_couples+padding);        
+
+        // set scheduler_IPE kernel arguments
+        run_scheduler_IPE.set_arg(arg_scheduler_IPE_in_n_couples, n_couples+padding);
+
         // set writer kernel arguments
         run_writer.set_arg(arg_writer_out_interpolated_ptr, buffer_writer_flt_transformed);
         run_writer.set_arg(arg_writer_in_n_couples, n_couples+padding);
@@ -214,6 +246,7 @@ public:
             std::cerr << "Error: Could not open floating volume. Some file in path \"" << path_flt << "\" might not exist" << std::endl;
             return -1;
         }
+        return 0;
     }
 
     //
@@ -268,18 +301,25 @@ public:
         run_fetcher_B.start();
         run_fetcher_C.start();
         run_fetcher_D.start();
-        run_setup_interpol.start();
-        run_setup_interpol_2.start();
+        // run_setup_interpol.start();
+        // run_setup_interpol_2.start();
+        // run_pixels_merger.start();
+        // run_IPEs_merger.start();
+        run_scheduler_IPE.start();
         // run_suppmi.start();
         run_writer.start();
         // run_mover_T1B.start();
+
 
         // waiting for kernels to finish
         // run_mover_T1B.wait();
         run_writer.wait();
         // run_suppmi.wait();
-        run_setup_interpol.wait();
-        run_setup_interpol_2.wait();
+        run_scheduler_IPE.wait();
+        // run_IPEs_merger.wait();
+        // run_pixels_merger.wait();
+        // run_setup_interpol.wait();
+        // run_setup_interpol_2.wait();
         run_fetcher_A.wait();
         run_fetcher_B.wait();
         run_fetcher_C.wait();

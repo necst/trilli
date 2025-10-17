@@ -24,9 +24,13 @@ SOFTWARE.
 
 #pragma once
 #include <chrono>
+#include <cmath>
 #include "../image_utils/image_utils.hpp"
-#include "../../../mutual_info/include/hw/mutualInfo/entropy.h"
-#include "../../../mutual_info/include/hw/mutualInfo/histogram.h"
+// #include "../../../mutual_info/include/hw/mutualInfo/entropy.h"
+// #include "../../../mutual_info/include/hw/mutualInfo/histogram.h"
+#include "../../../common/common.h"
+
+#define ANOTHER_DIMENSION 256
 
 class Timer {
 private:

@@ -26,7 +26,7 @@ SOFTWARE.
 #include <fstream>
 #include <cstdlib>
 #include <unistd.h>
-#include "opencv2/opencv.hpp"
+#include <iomanip>
 #include <sys/stat.h>
 #include <string>
 #include "experimental/xrt_kernel.h"

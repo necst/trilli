@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 #pragma once
-#include "opencv2/opencv.hpp"
 #include <iostream>
 #include <unordered_map>
 
@@ -35,6 +34,7 @@ SOFTWARE.
 // #define DEBUG_ACCESSED_INDEXES   // print the index for each read of the input volume
 #define TRACK_READS                 // count the ratio of sequential reads over total reads (slower)
 #define COMPILE_WITHOUT_DCMTK       // compile without DICOM support (to avoid linking dcmtk libs)
+// #define KEEP_BORDER_PADDING         // keep the border padding when storing the output volume
 
 #ifndef COMPILE_WITHOUT_DCMTK
 #include <dcmtk/dcmdata/dctk.h>

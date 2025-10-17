@@ -22,6 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "../stb/stb_image.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../stb/stb_image_writer.h"
+
 #include "image_utils.hpp"
 
 int cache_hits = 0;
@@ -429,40 +438,118 @@ int read_volume_from_file_DICOM(uint8_t *volume, const int SIZE, const int N_COU
 
 // NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus not include the padding.
 int read_volume_from_file_PNG(uint8_t *volume, const int SIZE, const int N_COUPLES, const int BORDER_PADDING, const int DEPTH_PADDING, const std::string &path) {
-    for (int i = 0; i < N_COUPLES; i++) {
-        std::string s = path + "IM" + std::to_string(i+1) + ".png";
-        cv::Mat image = cv::imread(s, cv::IMREAD_GRAYSCALE);
-        if (!image.data) return -1;
+    
+    int full_size = SIZE + 2 * BORDER_PADDING;
+    int full_depth = N_COUPLES + DEPTH_PADDING;
 
-        // add border-padding of 1px around the image
-        cv::copyMakeBorder(image, image, BORDER_PADDING, BORDER_PADDING, BORDER_PADDING, BORDER_PADDING, cv::BORDER_CONSTANT, 0);
+    uint8_t *slice = new uint8_t[SIZE * SIZE];
 
-        // copy the slice into the buffer
-        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
-        tmp.assign(image.begin<uint8_t>(), image.end<uint8_t>());
-        write_slice_in_buffer(tmp.data(), volume, i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
+    for (int k = 0; k < N_COUPLES; k++)
+    {
+        std::string filename = path + "/IM" + std::to_string(k+1) + ".png";
+        int w, h, n;
+        uint8_t *data = stbi_load(filename.c_str(), &w, &h, &n, 1);
+        if (data == nullptr)
+        {
+            std::cerr << "Error loading image: " << filename << std::endl;
+            return 1;
+        }
+
+        if (w != SIZE || h != SIZE)
+        {
+            std::cerr << "Image dimensions are not correct: " << filename << std::endl;
+            std::cerr << "Expected: " << SIZE << "x" << SIZE << ", got: " << w << "x" << h << std::endl;
+            return 1;
+        }
+
+        for (int i = 0; i < BORDER_PADDING; i++) {
+            for (int j = 0; j < full_size; j++)
+            {
+                // padding pixels top
+                volume[i * full_size * full_depth + j * full_depth + k] = 0; // black pixel
+                // padding pixels bottom
+                volume[(full_size - 1 - i) * full_size * full_depth + j * full_depth + k] = 0; // black pixel
+            }
+        }
+
+        for (int i = BORDER_PADDING; i < full_size - BORDER_PADDING; i++)
+        {
+            for (int j = 0; j < BORDER_PADDING; j++)
+            {
+                // padding pixels left
+                volume[i * full_size * full_depth + j * full_depth + k] = 0; // black pixel
+                // padding pixels right
+                volume[i * full_size * full_depth + (full_size - 1 - j) * full_depth + k] = 0; // black pixel
+            }
+
+            for (int j = BORDER_PADDING; j < full_size - BORDER_PADDING; j++)
+            {
+                volume[i * full_size * full_depth + j * full_depth + k] = data[(i - BORDER_PADDING) * SIZE + (j - BORDER_PADDING)];       
+            }
+        }
+
+        stbi_image_free(data);
     }
 
-    for (int i = 0; i < DEPTH_PADDING; i++) {
+    // depth-padding (black slices)
+    for (int k = N_COUPLES; k < N_COUPLES + DEPTH_PADDING; k++)
+    {
         // copy the slice into the buffer
-        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
-        tmp.assign(tmp.size(), 0);
-        write_slice_in_buffer(tmp.data(), volume, N_COUPLES+i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
+        for (int i = 0; i < full_size; i++)
+        {
+            for (int j = 0; j < full_size; j++)
+            {
+                volume[i * full_size * full_depth + j * full_depth + k] = 0; // black pixel
+            }
+        }
     }
+
+    delete[] slice;
 
     return 0;
 }
 
 // NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus not include the padding.
 void write_volume_to_file(uint8_t *volume, const int SIZE, const int N_COUPLES, const int BORDER_PADDING, const int DEPTH_PADDING, const std::string &path) {
-    for (int i = 0; i < N_COUPLES; i++) {
-        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
-        read_slice_from_buffer(volume, tmp.data(), i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
-        cv::Mat slice = (cv::Mat(SIZE+2*BORDER_PADDING, SIZE+2*BORDER_PADDING, CV_8U, tmp.data())).clone();
-        slice = slice(cv::Rect(BORDER_PADDING, BORDER_PADDING, SIZE, SIZE)); // remove depth-padding
-        std::string s = path + "IM" + std::to_string(i+1) + ".png";
-        cv::imwrite(s, slice);
+
+    fs::remove_all(path);
+    std::filesystem::create_directories(path);
+
+    int full_size = SIZE + 2 * BORDER_PADDING;
+    int full_depth = N_COUPLES + DEPTH_PADDING;
+    
+    #ifdef KEEP_BORDER_PADDING
+    uint8_t *slice = new uint8_t[full_size * full_size];
+    #else
+    uint8_t *slice = new uint8_t[SIZE * SIZE];
+    #endif
+
+    for (int k = 0; k < N_COUPLES; k++)
+    {
+        std::string filename = path + "/IM" + std::to_string(k+1) + ".png";
+
+        #ifdef KEEP_BORDER_PADDING
+        for (int i = 0; i < full_size; i++)
+        {
+            for (int j = 0; j < full_size; j++)
+            {
+                slice[i * full_size + j] = volume[i * full_size * full_depth + j * full_depth + k];
+            }
+        }
+        stbi_write_png(filename.c_str(), full_size, full_size, 1, slice, full_size);
+        #else
+        for (int i = BORDER_PADDING; i < full_size - BORDER_PADDING; i++)
+        {
+            for (int j = BORDER_PADDING; j < full_size - BORDER_PADDING; j++)
+            {
+                slice[(i - BORDER_PADDING) * SIZE + (j - BORDER_PADDING)] = volume[i * full_size * full_depth + j * full_depth + k];
+            }
+        }
+        stbi_write_png(filename.c_str(), SIZE, SIZE, 1, slice, SIZE);
+        #endif
     }
+
+    delete[] slice;
 }
 
 // NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus not include the padding.

@@ -46,8 +46,8 @@ CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_HLS)/include
 LDFLAGS := -L$(XILINX_XRT)/lib
 LDFLAGS += $(LDFLAGS) -lxrt_coreutil
 
-LIBS = `pkg-config --libs opencv`
-CFLAGS = `pkg-config --cflags opencv`
+LIBS =
+CFLAGS = 
 ifeq ($(TASK),TX)
     CFLAGS += -DONLYTX
 endif
@@ -64,17 +64,18 @@ DATASET_SW_OUTPUT_DIR := dataset_sw_output
 all: build_sw
 build_sw: $(EXECUTABLE)
 
+N_RUNS = 1
 run_sw:
 	mkdir -p $(DATASET_OUTPUT_DIR)
 	mkdir -p $(DATASET_SW_OUTPUT_DIR)
-	./$(EXECUTABLE)
+	./$(EXECUTABLE) $(N_COUPLES) $(TX) $(TY) $(ANG) $(N_RUNS)
 
 $(EXECUTABLE): $(HOST_SRCS)
 	$(CXX) -o $(EXECUTABLE) $^ $(CXXFLAGS) $(LDFLAGS) $(CFLAGS) $(LIBS)
-	@rm -f ./overlay_hw.xclbin
-	@rm -f ./overlay_hw_emu.xclbin
-	@ln -s ../hw/overlay_hw.xclbin
-	@ln -s ../hw/overlay_hw_emu.xclbin
+# @rm -f ./overlay_hw.xclbin
+# @rm -f ./overlay_hw_emu.xclbin
+# @ln -s ../hw/overlay_hw.xclbin
+# @ln -s ../hw/overlay_hw_emu.xclbin
 
 switch_dataset:
 	$(info )
