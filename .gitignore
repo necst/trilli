@@ -84,3 +84,4 @@ data_movers/setup_mi_body.hpp
 3DIRG_application/trilli_app
 *.cog.*
 __pycache__/
+*.python-version
