@@ -108,7 +108,9 @@ testbench_c:
 testbench_noaie:
 	make -C ./data_movers testbench_noaie
 
-NAME := hw_build
+CONFIG_STRING = $(TASK)_$(DIMENSION)_IPE$(INT_PE)_DSPE$(DS_PE)_PPR$(PIXELS_PER_READ)_HPE$(HIST_PE)_EPE$(ENTROPY_PE)_F$(FREQUENCY)
+NAME_PREFIX = build
+NAME ?= $(TASK)_$(NAME_PREFIX)_$(TARGET)_$(CONFIG_STRING)
 XCLBIN := hw/overlay_hw.xclbin 
 pack:
 	mkdir -p build/$(NAME)/dataset
