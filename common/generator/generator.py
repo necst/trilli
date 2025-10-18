@@ -348,6 +348,9 @@ const unsigned int ENTROPY_PE_CONST = ENTROPY_PE;\n \
 //15")
     mi_header.write("\n#endif")
 
+    if interpolator_pe_number % datascheduler_pe_number != 0:
+        raise ValueError("interpolator_pe_number must be multiple of datascheduler_pe_number")
+
     ds_pe = datascheduler_pe_number
     int_pe_per_ds = interpolator_pe_number // ds_pe # forse saturated?
     int_pe_per_ds_expo = int(math.log2(int_pe_per_ds))
