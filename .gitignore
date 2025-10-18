@@ -88,3 +88,5 @@ __pycache__/
 3DIRG_wrapper_deploy
 3DIRG_wrapper_deploy/
 .venv/
+aie/Map_Report.csv
+aie/sol.db
