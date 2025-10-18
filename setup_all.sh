@@ -1,6 +1,8 @@
+#!/bin/bash
+
 # MIT License
 
-# Copyright (c) 2023 Paolo Salvatore Galfano, Giuseppe Sorrentino
+# Copyright (c) 2025 Paolo Salvatore Galfano, Giuseppe Sorrentino
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,3 +24,25 @@
 
 source /opt/xrt/2023.1/setup.sh
 source /home/xilinx/Vitis/2023.1/settings64.sh
+
+# Install pre-commit if not present ("system-wide" for vs-code integration)
+if ! command -v pre-commit &> /dev/null
+then
+    pip install -q pre-commit
+    
+    # Check if installation was successful
+    if ! command -v pre-commit &> /dev/null
+    then
+        echo "Warning: pre-commit not installed" >&2
+    else
+        pre-commit install &> /dev/null
+    fi
+fi
+
+if [ ! -d ".venv" ]; then
+  make python-venv
+fi
+
+if [ -z "$VIRTUAL_ENV" ] || [ "$VIRTUAL_ENV" != "$(realpath .venv)" ]; then
+  source .venv/bin/activate
+fi

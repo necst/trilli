@@ -85,3 +85,6 @@ data_movers/setup_mi_body.hpp
 *.cog.*
 __pycache__/
 *.python-version
+3DIRG_wrapper_deploy
+3DIRG_wrapper_deploy/
+.venv/
