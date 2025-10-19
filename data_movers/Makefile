@@ -82,8 +82,8 @@ fetcher_C_$(TARGET).xo: ./fetcher_C.cpp
 fetcher_D_$(TARGET).xo: ./fetcher_D.cpp
 	v++ $(XOCCFLAGS) --kernel fetcher_D -c -o $@ $<
 
-# setup_interpolator_$(TARGET).xo: ./setup_interpolator.cpp
-# 	v++ $(XOCCFLAGS) --kernel setup_interpolator -c -o $@ $<
+scheduler_IPE_$(TARGET).xo: ./scheduler_IPE.cpp
+	v++ $(XOCCFLAGS) --kernel scheduler_IPE -c -o $@ $<
 
 writer_$(TARGET).xo: ./writer.cpp
 	v++ $(XOCCFLAGS) --kernel writer -c -o $@ $<
