@@ -166,6 +166,7 @@ public:
         run_setup_interpol = xrt::run(krnl_setup_interpol);
         run_setup_interpol_2 = xrt::run(krnl_setup_interpol_2);
         run_setup_mi = xrt::run(krnl_setup_mi);
+        run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_mutual_info = xrt::run(krnl_mutual_info);
         run_pixels_merger = xrt::run(krnl_pixels_merger);
         
@@ -183,12 +184,8 @@ public:
         run_fetcher_D.set_arg(arg_fetcher_in_flt_original_ptr, buffer_fetcher_D_flt_in);
         run_fetcher_D.set_arg(arg_fetcher_in_n_couples, n_couples+padding);
 
-        // set setup_interpol kernel arguments
-        run_setup_interpol.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
-        run_setup_interpol_2.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
-
-        // set pixels_merger kernel arguments
-        run_pixels_merger.set_arg(arg_pixels_merger_in_n_couples, n_couples+padding);
+        // set scheduler_IPE kernel arguments
+        run_scheduler_IPE.set_arg(arg_scheduler_IPE_in_n_couples, n_couples + depth_padding);
 
         // set setup mi kernel arguments
         run_setup_mi.set_arg(arg_setup_mi_pixel_out, buffer_setup_mi_flt_transformed);

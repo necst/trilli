@@ -37,7 +37,7 @@ SOFTWARE.
 
 // For hw emulation, run in sw directory: source ./setup_emu.sh -s on
 
-#define DEVICE_ID   0
+#define DEVICE_ID 2
 
 #ifndef ONLYTX
 #include "./include/versal_3dir/Versal3DIR.cpp"
@@ -151,13 +151,13 @@ int main(int argc, char *argv[]) {
         duration_write_flt_sec = 0;
         std::cout << "3. Transfering volumes to board's main memory... ";
         board.write_floating_volume(&duration_write_flt_sec);
-        board.write_reference_volume(&duration_write_flt_sec);   
-        std::cout << "Done\t\t[" << duration_write_flt_sec << " s]" << std::endl;
+        board.write_reference_volume(&duration_write_flt_sec);
+        std::cout << "Done\t\t[" << duration_write_flt_sec << " s]" << std::endl << std::flush;
 
         // Running on the board
-        std::cout <<  bold_on << "5. Running 3DIR step on hardware... ";
+        std::cout << bold_on << "5. Running 3DIR step on hardware... " << bold_off << std::flush;
         output_data = hw_transform(board, TX, TY, ANG, &duration_execution_sec);
-        std::cout << "Done\t\t\t[" << duration_execution_sec << " s]" << bold_off << std::endl;
+        std::cout << bold_on << "Done\t\t\t[" << duration_execution_sec << " s]" << bold_off << std::flush << std::endl;
 
         //------------------------------------------------SAVING RESULTS------------------------------------------
         std::cout << "6. Transfering output volume from board's main memory... ";
