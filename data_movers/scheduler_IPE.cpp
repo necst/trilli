@@ -60,17 +60,17 @@ void scheduler_IPE(
     const uint64_t NUM_ITERATIONS = (uint64_t)((DIMENSION * DIMENSION * n_couples) / NUM_PIXELS_PER_READ);
 
     hls::stream<double_chunk_t> stream_ab("stream_ab");
-    #pragma HLS STREAM variable=stream_ab depth=8*NUM_CHUNKS_PER_FETCH // per evitare stalli quando NPPR > 32 (II interleave > 1)
+#pragma HLS STREAM variable = stream_ab depth = 8 * NUM_CHUNKS_PER_FETCH
     hls::stream<double_chunk_t> stream_cd("stream_cd");
-    #pragma HLS STREAM variable=stream_cd depth=8*NUM_CHUNKS_PER_FETCH // per evitare stalli quando NPPR > 32 (II interleave > 1)
+#pragma HLS STREAM variable = stream_cd depth = 8 * NUM_CHUNKS_PER_FETCH
 
     hls::stream<double_chunk_t> stream_final_ab[DS_PE];
-    #pragma HLS STREAM variable=stream_final_ab depth=2*16 // Imposta la profondità del buffer per evitare deadlock (2*8 dovrebbe bastare, ossia tanto II dello scheduler per il numero di double_chunk)
-    #pragma HLS RESOURCE variable=stream_final_ab core=FIFO_BRAM
-    
+#pragma HLS STREAM variable = stream_final_ab depth = 2 * 16
+#pragma HLS RESOURCE variable = stream_final_ab core = FIFO_BRAM
+
     hls::stream<double_chunk_t> stream_final_cd[DS_PE];
-    #pragma HLS STREAM variable=stream_final_cd depth=2*16 // Imposta la profondità del buffer per evitare deadlock (2*8 dovrebbe bastare, ossia tanto II dello scheduler per il numero di double_chunk)
-    #pragma HLS RESOURCE variable=stream_final_cd core=FIFO_BRAM
+#pragma HLS STREAM variable = stream_final_cd depth = 2 * 16
+#pragma HLS RESOURCE variable = stream_final_cd core = FIFO_BRAM
 
     chunk_pair_interleave(in_from_fetcher_a, in_from_fetcher_b, stream_ab, NUM_ITERATIONS); // genera: ...B2A2B1A1B0A0
     chunk_pair_interleave(in_from_fetcher_c, in_from_fetcher_d, stream_cd, NUM_ITERATIONS); // genera: ...D2C2D1C1D0C0
