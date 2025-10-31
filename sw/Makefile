@@ -65,10 +65,13 @@ all: build_sw
 build_sw: $(EXECUTABLE)
 
 N_RUNS = 1
+DEVICE_ID = 2
 run_sw:
-	mkdir -p $(DATASET_OUTPUT_DIR)
-	mkdir -p $(DATASET_SW_OUTPUT_DIR)
-	./$(EXECUTABLE) $(N_COUPLES) $(TX) $(TY) $(ANG) $(N_RUNS)
+	@mkdir -p $(DATASET_OUTPUT_DIR)
+	@mkdir -p $(DATASET_SW_OUTPUT_DIR)
+	$(info Running with DEVICE_ID=$(DEVICE_ID))
+	$(info )
+	./$(EXECUTABLE) $(N_COUPLES) $(N_ROWS) $(N_COLS) $(TX) $(TY) $(ANG) $(N_RUNS) $(DEVICE_ID)
 
 $(EXECUTABLE): $(HOST_SRCS)
 	$(CXX) -o $(EXECUTABLE) $^ $(CXXFLAGS) $(LDFLAGS) $(CFLAGS) $(LIBS)
