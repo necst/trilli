@@ -293,22 +293,22 @@ int main(int argc, char** argv) {
     //
     // ---------- (6) writer ----------
     //
-    std::printf("-> Running writer\n");
-    writer(
-        WRITER_TESTBENCH_CALL(out_aie_interpolated),
-        (WIDE_PIXEL_TYPE*)output_volume_hw, 
-        n_couples+padding);
+    // std::printf("-> Running writer\n");
+    // writer(
+    //     WRITER_TESTBENCH_CALL(out_aie_interpolated),
+    //     (WIDE_PIXEL_TYPE*)output_volume_hw, 
+    //     n_couples+padding);
 
     //
-    // ---------- (6) setup_mi ----------
-    // std::printf("-> Running setup_mi\n");
-    // hls::stream<MI_PIXEL_TYPE> out_setup_mi("out_setup_mi");
-    // setup_mi(
-    //     SETUP_MI_TESTBENCH_CALL(out_aie_interpolated), 
-    //     out_setup_mi,
-    //     (WIDE_PIXEL_TYPE*) output_volume_hw,
-    //     n_couples + padding
-    // );
+    // ---------- (6) Mutual Information ----------
+    std::printf("-> Running setup_mi\n");
+    hls::stream<MI_PIXEL_TYPE> out_setup_mi("out_setup_mi");
+    setup_mi(
+        SETUP_MI_TESTBENCH_CALL(out_aie_interpolated), 
+        out_setup_mi,
+        (WIDE_PIXEL_TYPE*) output_volume_hw,
+        n_couples + padding
+    );
 
     // // Salva out_setup_mi in numeri da 1 byte su file
     // // write_stream_to_file_unpack<MI_PIXEL_TYPE, ORIGINAL_PIXEL_TYPE>(out_setup_mi, "mi_in.txt" , PLIO_32);
@@ -318,18 +318,16 @@ int main(int argc, char** argv) {
     // //
     // // std::cout << "SIZE: " << out_setup_mi.size() << std::endl;
     // // return 0;
-    // printf("Size of stream before: %ld\n", out_setup_mi.size());
+    printf("Size of stream before: %ld\n", out_setup_mi.size());
 
-
-
-    // std::printf("-> Running mutual_info\n");
+    std::printf("-> Running mutual_info\n");
     float hw_mi;
     
-    // mutual_information_master(out_setup_mi, (MI_PIXEL_TYPE*) input_volume, &hw_mi, n_couples + padding, padding);
-    // // printf("Size of stream after: %d\n", out_setup_mi.size());
+    mutual_information_master(out_setup_mi, (MI_PIXEL_TYPE*) input_volume, &hw_mi, n_couples + padding, padding);
+    printf("Size of stream after: %d\n", out_setup_mi.size());
 
-    // // empty the out_setup_mi stream
-    // write_stream_to_file<MI_PIXEL_TYPE>(out_setup_mi, AIE_FOLDER("data/mi_in.txt"), PLIO_32);
+    // empty the out_setup_mi stream
+    write_stream_to_file<MI_PIXEL_TYPE>(out_setup_mi, AIE_FOLDER("data/mi_in.txt"), PLIO_32);
 
 
     // write volume to file
