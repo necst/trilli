@@ -214,7 +214,7 @@ def generate_passing(IPE, HPE, suffix="", BI=1, saturated=False):
     if not saturated:
         lines.append(f"constexpr int VOLUME_withoutDepth = ((DIMENSION * DIMENSION >> INT_PE_EXPO_SATURATED) >> 5) >> unrolling_factor_expo; \\")
     else:
-        lines.append(f"const int VOLUME_withoutDepth = (((n_row * n_col) >> INT_PE_EXPO_SATURATED) >> (5)) >> unrolling_factor_expo; \\")
+        lines.append(f"const int VOLUME_withoutDepth = (((DIMENSION * DIMENSION) >> INT_PE_EXPO_SATURATED) >> (5)) >> unrolling_factor_expo; \\")
     lines.append(f"\n")
 
     # ----------------- SETUP_MI_(WRITER)_BODY -----------------

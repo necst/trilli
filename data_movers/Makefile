@@ -99,10 +99,11 @@ run_testbench_ultimate_t: testbench/ultimate/testbench_ultimate.exe
 	rm -f testbench/dataset_output_*/*.png
 	cd testbench/ultimate && ./testbench_ultimate.exe $(N_COUPLES) $(TX) $(TY) $(ANG)
 
-generate_movers_body: 
+generate_movers_body: ../default.cfg movers_generator.py
 	python3 movers_generator.py $(INT_PE) $(PIXELS_PER_READ) $(HIST_PE)
 
 ################## clean up
 clean:
 	$(RM) -rf *.xo *.xclbin *.xclbin.info *.xclbin.link_summary *.jou *.log *.xo.compile_summary _x .Xil
 	$(RM) testbench/ultimate/testbench_ultimate.exe
+	$(RM) setup_mi_body.hpp setup_interpolator_body.hpp writer_body.hpp 
