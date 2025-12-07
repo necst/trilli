@@ -48,6 +48,7 @@ aie_compile_x86:
 	@echo "INFO:Running aiecompiler for x86sim..."
 	@rm -rf Work libadf.a
 	@mkdir -p Work
+	@mkdir -p data
 	@aiecompiler --target=x86sim --platform=$(PLATFORM) --include="src" --include="../common" --workdir=./Work src/graph_incremental.cpp
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

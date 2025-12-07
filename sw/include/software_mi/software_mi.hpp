@@ -47,4 +47,4 @@ public:
     }
 };
 
-double software_mi(int n_couples, const int TX, const int TY, const float ANG, const std::string &input_path, double* duration_sec);
+double software_mi(int n_couples, const int TX, const int TY, const float ANG, const std::string &input_path, double* duration_sec, bool save_output=false);

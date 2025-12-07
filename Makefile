@@ -89,7 +89,6 @@ config:
 	$(info )
 	cd common/generator && python3 generator.py -vts -id $(DIMENSION) -ncm $(N_COUPLES_MAX) -pe $(HIST_PE) -pen $(ENTROPY_PE) -intpe $(INT_PE) -op ../ -ppr $(PIXELS_PER_READ) -dspe $(DS_PE)
 	mv common/mutual_info.hpp mutual_info/include/hw/mutualInfo
-	make -C ./aie generate_input_data
 	make -C ./hw generate_config
 	make -C ./data_movers generate_movers_body
 	make -C ./sw switch_dataset
@@ -191,10 +190,11 @@ python-venv: .venv
 	python3 -m pip install -r requirements.txt
 
 # Clean objects
-clean: clean_aie clean_mutual_info clean_data_movers clean_hw clean_sw
+clean: clean_aie clean_mutual_info clean_data_movers clean_hw clean_sw clean_app
 
 clean_mutual_info:
 	make -C ./mutual_info clean
+
 clean_aie:
 	make -C ./aie clean
 

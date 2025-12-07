@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include "software_mi.hpp"
 
-double software_mi(int n_couples, const int TX, const int TY, const float ANG, const std::string &input_path, double* duration_sec) {
+double software_mi(int n_couples, const int TX, const int TY, const float ANG, const std::string &input_path, double* duration_sec, bool save_output) {
     const int padding = (HIST_PE - (n_couples % HIST_PE)) % HIST_PE;
     uint8_t* input_ref = new uint8_t[DIMENSION*DIMENSION * (n_couples + padding)];
     uint8_t* input_flt = new uint8_t[DIMENSION*DIMENSION * (n_couples + padding)];
@@ -135,7 +135,9 @@ double software_mi(int n_couples, const int TX, const int TY, const float ANG, c
     if (duration_sec != NULL)
         *duration_sec = timer_sw.getElapsedSeconds();
 
-    write_volume_to_file(output_flt,DIMENSION,n_couples,0,padding,"dataset_sw_output/");
+    if (save_output)
+        write_volume_to_file(output_flt,DIMENSION,n_couples,0,padding,"dataset_sw_output/");
+    
     delete[] input_flt;
     delete[] input_ref;
     delete[] output_flt;

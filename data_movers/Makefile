@@ -93,8 +93,10 @@ writer_$(TARGET).xo: ./writer.cpp
 testbench/ultimate/testbench_ultimate.exe: testbench/ultimate/testbench_ultimate.cpp ../sw/include/software_mi/software_mi.cpp testbench/utils.hpp | scheduler_IPE.cpp
 	g++ -std=c++17 -I. -I$(XILINX_HLS)/include -o $@ $^ -O2
 run_testbench_ultimate: testbench/ultimate/testbench_ultimate.exe
+	rm -f testbench/dataset_output_*/*.png
 	cd testbench/ultimate && ./testbench_ultimate.exe $(N_COUPLES)
 run_testbench_ultimate_t: testbench/ultimate/testbench_ultimate.exe
+	rm -f testbench/dataset_output_*/*.png
 	cd testbench/ultimate && ./testbench_ultimate.exe $(N_COUPLES) $(TX) $(TY) $(ANG)
 
 generate_movers_body: 
@@ -103,3 +105,4 @@ generate_movers_body:
 ################## clean up
 clean:
 	$(RM) -rf *.xo *.xclbin *.xclbin.info *.xclbin.link_summary *.jou *.log *.xo.compile_summary _x .Xil
+	$(RM) testbench/ultimate/testbench_ultimate.exe
