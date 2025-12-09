@@ -27,6 +27,20 @@ SOFTWARE.
 #include "../../../common/common.h"
 #include "../image_utils/image_utils.hpp"
 
+// saturating num of output plios to MAX_INT_PE_PLIOS
+#if INT_PE == 2 * MAX_INT_PE_PLIOS // mapping 1 plio to 2 IPEs
+#if INT_PE_SATURATED != INT_PE / 2
+#error "Only 1:2 mapping (PLIOs to IPEs) is supported, set INT_PE_SATURATED to INT_PE/2, or INT_PE <= MAX_INT_PE_PLIOS"
+#endif
+#define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
+#define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
+#elif INT_PE < 2 * MAX_INT_PE_PLIOS
+#define NUM_OUTPUT_PLIOS INT_PE / 2
+#define NUM_INPUT_PLIOS INT_PE
+#else
+#error "INT_PE > 2 * MAX_INT_PE_PLIOS not supported"
+#endif
+
 // args indexes for setup_aie kernel
 #define arg_setup_aie_in_tx 0
 #define arg_setup_aie_in_ty 1
@@ -37,19 +51,12 @@ SOFTWARE.
 #define arg_fetcher_in_flt_original_ptr 2
 #define arg_fetcher_in_n_couples 3
 
-// args indexes for setup_interpolation kernel
-#define arg_setinterpol_in_n_couples 3 + INT_PE - 1
-
-// args indexes for pixels_merger kernel
-#define arg_pixels_merger_in_n_couples 3 * INT_PE
-
-// args indexes for writer kernel
-#define arg_writer_out_interpolated_ptr 1 + INT_PE - 1
-#define arg_writer_in_n_couples 2 + INT_PE - 1
+// args indexes for scheduler_IPE kernel
+#define arg_scheduler_IPE_in_n_couples 4
 
 // args indexes for setup_mi 
-#define arg_setup_mi_pixel_out INT_PE + 1
-#define arg_setup_mi_n_couples INT_PE + 2
+#define arg_setup_mi_pixel_out NUM_OUTPUT_PLIOS + 1
+#define arg_setup_mi_n_couples NUM_OUTPUT_PLIOS + 2
 
 // args mutual info
 #define arg_mutual_info_reference 1
@@ -80,9 +87,7 @@ public:
     xrt::kernel krnl_fetcher_B;
     xrt::kernel krnl_fetcher_C;
     xrt::kernel krnl_fetcher_D;
-    xrt::kernel krnl_setup_interpol;
-    xrt::kernel krnl_setup_interpol_2;
-    xrt::kernel krnl_pixels_merger;
+    xrt::kernel krnl_scheduler_IPE;
     xrt::kernel krnl_setup_mi;
     xrt::kernel krnl_mutual_info;
 
@@ -90,7 +95,6 @@ public:
     xrtMemoryGroup bank_fetcher_B_flt_in;
     xrtMemoryGroup bank_fetcher_C_flt_in;
     xrtMemoryGroup bank_fetcher_D_flt_in;
-    xrtMemoryGroup bank_writer_flt_transformed;
     xrtMemoryGroup bank_setup_mi;
     xrtMemoryGroup bank_mutual_info;
     xrtMemoryGroup bank_mutual_info_output;
@@ -108,9 +112,7 @@ public:
     xrt::run run_fetcher_B;
     xrt::run run_fetcher_C;
     xrt::run run_fetcher_D;
-    xrt::run run_setup_interpol;
-    xrt::run run_setup_interpol_2;
-    xrt::run run_pixels_merger;
+    xrt::run run_scheduler_IPE;
     xrt::run run_setup_mi;
     xrt::run run_mutual_info;
 
@@ -130,9 +132,7 @@ public:
         krnl_fetcher_B   = xrt::kernel(device, xclbin_uuid, "fetcher_B");
         krnl_fetcher_C   = xrt::kernel(device, xclbin_uuid, "fetcher_C");
         krnl_fetcher_D   = xrt::kernel(device, xclbin_uuid, "fetcher_D");
-        krnl_setup_interpol= xrt::kernel(device, xclbin_uuid, "setup_interpolator:{setup_interpolator_0}");
-        krnl_setup_interpol_2= xrt::kernel(device, xclbin_uuid, "setup_interpolator:{setup_interpolator_1}");
-        krnl_pixels_merger = xrt::kernel(device, xclbin_uuid, "pixels_merger");
+        krnl_scheduler_IPE = xrt::kernel(device, xclbin_uuid, "scheduler_IPE");
         krnl_setup_mi = xrt::kernel(device, xclbin_uuid, "setup_mi");
         krnl_mutual_info = xrt::kernel(device, xclbin_uuid, "mutual_information_master");
 
@@ -163,13 +163,10 @@ public:
         run_fetcher_B = xrt::run(krnl_fetcher_B);
         run_fetcher_C = xrt::run(krnl_fetcher_C);
         run_fetcher_D = xrt::run(krnl_fetcher_D);
-        run_setup_interpol = xrt::run(krnl_setup_interpol);
-        run_setup_interpol_2 = xrt::run(krnl_setup_interpol_2);
+        run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_setup_mi = xrt::run(krnl_setup_mi);
         run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_mutual_info = xrt::run(krnl_mutual_info);
-        run_pixels_merger = xrt::run(krnl_pixels_merger);
-        
 
         // run_suppmi = xrt::run(krnl_suppmi);
         //run_mover_T1B = xrt::run(krnl_mover_T1B);
@@ -185,7 +182,7 @@ public:
         run_fetcher_D.set_arg(arg_fetcher_in_n_couples, n_couples+padding);
 
         // set scheduler_IPE kernel arguments
-        run_scheduler_IPE.set_arg(arg_scheduler_IPE_in_n_couples, n_couples + depth_padding);
+        run_scheduler_IPE.set_arg(arg_scheduler_IPE_in_n_couples, n_couples + padding);
 
         // set setup mi kernel arguments
         run_setup_mi.set_arg(arg_setup_mi_pixel_out, buffer_setup_mi_flt_transformed);
@@ -278,22 +275,18 @@ public:
         run_fetcher_B.start();
         run_fetcher_C.start();
         run_fetcher_D.start();
-        run_setup_interpol.start();
-        run_setup_interpol_2.start();
-        run_pixels_merger.start();
+        run_scheduler_IPE.start();
         run_setup_mi.start();
         run_mutual_info.start();
 
-        run_mutual_info.wait();
-        run_setup_mi.wait();
-        run_pixels_merger.wait();
-        run_setup_interpol.wait();
-        run_setup_interpol_2.wait();
+        run_setup_aie.wait();
         run_fetcher_A.wait();
         run_fetcher_B.wait();
         run_fetcher_C.wait();
         run_fetcher_D.wait();
-        run_setup_aie.wait();
+        run_scheduler_IPE.wait();
+        run_setup_mi.wait();
+        run_mutual_info.wait();
         if (duration != NULL) *duration += timer_execution.getElapsedSeconds();
     }
 
