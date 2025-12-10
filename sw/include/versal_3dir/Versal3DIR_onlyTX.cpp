@@ -27,6 +27,20 @@ SOFTWARE.
 #include "../../../common/common.h"
 #include "../image_utils/image_utils.hpp"
 
+// saturating num of output plios to MAX_INT_PE_PLIOS
+#if INT_PE == 2 * MAX_INT_PE_PLIOS // mapping 1 plio to 2 IPEs
+#if INT_PE_SATURATED != INT_PE / 2
+#error "Only 1:2 mapping (PLIOs to IPEs) is supported, set INT_PE_SATURATED to INT_PE/2, or INT_PE <= MAX_INT_PE_PLIOS"
+#endif
+#define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
+#define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
+#elif INT_PE < 2 * MAX_INT_PE_PLIOS
+#define NUM_OUTPUT_PLIOS INT_PE / 2
+#define NUM_INPUT_PLIOS INT_PE
+#else
+#error "INT_PE > 2 * MAX_INT_PE_PLIOS not supported"
+#endif
+
 // args indexes for setup_aie kernel
 #define arg_setup_aie_in_tx 0
 #define arg_setup_aie_in_ty 1
@@ -50,8 +64,8 @@ SOFTWARE.
 #define arg_scheduler_IPE_in_n_couples 4
 
 // args indexes for writer kernel
-#define arg_writer_out_interpolated_ptr 1 + INT_PE_SATURATED - 1
-#define arg_writer_in_n_couples 2 + INT_PE_SATURATED - 1
+#define arg_writer_out_interpolated_ptr 1 + NUM_OUTPUT_PLIOS - 1
+#define arg_writer_in_n_couples 2 + NUM_OUTPUT_PLIOS - 1
 
 // args indexes for support_mi kernel
 // #define arg_support_mi_out_coord_ptr 3

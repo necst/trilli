@@ -165,7 +165,6 @@ public:
         run_fetcher_D = xrt::run(krnl_fetcher_D);
         run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_setup_mi = xrt::run(krnl_setup_mi);
-        run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_mutual_info = xrt::run(krnl_mutual_info);
 
         // run_suppmi = xrt::run(krnl_suppmi);
@@ -221,6 +220,7 @@ public:
             std::cerr << "Error: Could not open reference volume. Some file in path \"" << path_ref << "\" might not exist" << std::endl;
             return -1;
         }
+        return 0;
     }
 
     //
