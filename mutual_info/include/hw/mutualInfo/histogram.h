@@ -80,6 +80,8 @@ void joint_histogram_volume(hls::stream<Tin> &ref_stream, hls::stream<Tin> &flt_
 	Tin old_x = 0, old_y = 0;
 	Thist acc = 0;
 	bool first = true;
+
+#pragma HLS bind_storage variable = j_h type = RAM_2P impl = uram
 #pragma HLS DEPENDENCE variable=j_h intra RAW false
 	acc = j_h[slice][old_x][old_y];
 
@@ -128,6 +130,8 @@ template<typename Tin, unsigned int dim, typename Tout, unsigned int STREAM, typ
 void sum_joint_histogram(hls::stream<Tin> in_stream[STREAM], hls::stream<Tout> &j_h_stream, unsigned int padding){
 
 	static TtmpOut tmp[ENTROPY_PE];
+#pragma HLS bind_storage variable = tmp type = RAM_2P impl = uram
+
 #pragma HLS ARRAY_PARTITION variable=tmp complete dim=1
 
 	for(int i = 0; i < dim; i++){
