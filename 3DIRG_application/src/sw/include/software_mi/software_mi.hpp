@@ -1,8 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2025 Giuseppe Sorrentino, Paolo Salvatore Galfano, Davide
-Conficconi, Eleonora D'Arnese
+Copyright (c) 2025 Giuseppe Sorrentino, Paolo Salvatore Galfano, Davide Conficconi, Eleonora D'Arnese
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,16 +23,9 @@ SOFTWARE.
 */
 
 #pragma once
-#include "../../../../../common/constants.h"
-#include "../image_utils/image_utils.hpp"
-
 #include <chrono>
+#include "../image_utils/image_utils.hpp"
+#include "../../../../../common/constants.h"
 
-static double sw_registration_step_3d(uint8_t *input_ref, uint8_t *input_flt,
-                                      uint8_t *output_flt, int depth, int n_row,
-                                      int n_col, int padding, const int TX,
-                                      const int TY, const float ANG);
-static double sw_registration_step_3d(uint8_t *input_ref, uint8_t *input_flt,
-                                      int depth, int n_row, int n_col,
-                                      int padding, const int TX, const int TY,
-                                      const float ANG);
+static double sw_registration_step_3d(uint8_t* input_ref, uint8_t* input_flt, uint8_t* output_flt, int n_couples, const int TX, const int TY, const float ANG,int depth, int padding);
+static double sw_registration_step_3d(uint8_t* input_ref, uint8_t* input_flt,int n_couples, const int TX, const int TY, const float ANG,int depth, int padding);

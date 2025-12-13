@@ -1,8 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2025 Giuseppe Sorrentino, Paolo Salvatore Galfano, Davide
-Conficconi, Eleonora D'Arnese
+Copyright (c) 2025 Giuseppe Sorrentino, Paolo Salvatore Galfano, Davide Conficconi, Eleonora D'Arnese
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,665 +29,436 @@ int cache_misses = 0;
 int cache_size = 0;
 
 void get_cache_stats(int &hits, int &misses, int &size) {
-  hits = cache_hits;
-  misses = cache_misses;
-  size = cache_size;
+    hits = cache_hits;
+    misses = cache_misses;
+    size = cache_size;
 }
 
 void reset_cache_stats() {
-  cache_hits = 0;
-  cache_misses = 0;
-  cache_size = 0;
+    cache_hits = 0;
+    cache_misses = 0;
+    cache_size = 0;
 }
 
-#define CACHE_STRATEGY_SIGNATURE2                                              \
-  uint8_t *source, int Pi, int Pj, int i, int j, int k, int index, int n_row,  \
-      int n_col, int LAYERS, bool can_overwrite
-typedef uint8_t (*CacheStrategy2)(CACHE_STRATEGY_SIGNATURE2);
-#define NO_CACHING2 NULL
+#define CACHE_STRATEGY_SIGNATURE uint8_t *source, int Pi, int Pj, int i, int j, int k, int index, int SIZE, int LAYERS, bool can_overwrite
+typedef uint8_t (*CacheStrategy)(CACHE_STRATEGY_SIGNATURE);
+#define NO_CACHING NULL
 
-uint8_t read_from_cache(CACHE_STRATEGY_SIGNATURE2,
-                        CacheStrategy2 cache_strategy = NO_CACHING2) {
-  if (index == -1)
-    return 0;
-  if (k > 0 || cache_strategy == NO_CACHING2)
-    return source[index];
+uint8_t read_from_cache(CACHE_STRATEGY_SIGNATURE, CacheStrategy cache_strategy = NO_CACHING) {
+    if (index == -1) return 0;
+    if (k > 0 || cache_strategy == NO_CACHING) return source[index];
 
-  return cache_strategy(source, Pi, Pj, i, j, k, index, n_row, n_col, LAYERS,
-                        can_overwrite);
+    return cache_strategy(source, Pi, Pj, i, j, k, index, SIZE, LAYERS, can_overwrite);
 }
 
 // macro for the function signature of a caching strategy with name X
-#define CACHE_STRATEGY_DEF2(X)                                                 \
-  uint8_t cache_strategy2_##X(CACHE_STRATEGY_SIGNATURE2)
-#define CACHE_STRATEGY2(X) &cache_strategy2_##X
+#define CACHE_STRATEGY_DEF(X) uint8_t cache_strategy_##X(CACHE_STRATEGY_SIGNATURE)
+#define CACHE_STRATEGY(X) &cache_strategy_##X
 
-// ---------- caching strategies (n_row, n_col) ----------
+
+// ---------- cahing strategies ----------
 
 // just for testing
-CACHE_STRATEGY_DEF2(dummy) { return source[index]; }
+// uint8_t cache_strategy_dummy(uint8_t *source, int i, int j, int k, int index, int SIZE, int LAYERS, bool can_overwrite) {
+CACHE_STRATEGY_DEF(dummy) {
+    return source[index];
+}
 
-// like that paper
-// (https://sfat.massey.ac.nz/research/centres/crisp/pdfs/2004_DELTA_126.pdf)
-CACHE_STRATEGY_DEF2(GribbonBailey) {
-  struct CacheElem {
-    int y;
-    uint8_t value;
-  };
-  static std::unordered_map<int, CacheElem> cache;
+// like that paper (https://sfat.massey.ac.nz/research/centres/crisp/pdfs/2004_DELTA_126.pdf)
+CACHE_STRATEGY_DEF(GribbonBailey) {
+    struct CacheElem {
+        int y;
+        uint8_t value;
+    };
+    static std::unordered_map<int, CacheElem> cache;
 
-  bool hit = (cache.find(Pi) != cache.end() && cache[Pi].y == Pj);
+    bool hit = (cache.find(Pi) != cache.end() && cache[Pi].y == Pj);
 
-  if (hit) {
-    cache_hits++;
-    return cache[Pi].value;
-  }
+    if (hit) {
+        cache_hits++;
+        return cache[Pi].value;
+    }
 
-  cache_misses++;
-  uint8_t new_value = source[index];
-  if (can_overwrite)
-    cache[Pi] = {Pj, new_value};
-  return new_value;
+    cache_misses++;
+    uint8_t new_value = source[index];
+    if (can_overwrite)
+        cache[Pi] = {Pj, new_value};
+    return new_value;
 }
 
 template <class T>
-int compute_buffer_offset(const int n_row, const int n_col, const int LAYERS,
-                          const T i, const T j, const T k) {
-#ifndef USE_OLD_FORMAT
-  // NEW FORMAT: row-major sui pixel
-  // linear = (i * n_col + j) * LAYERS + k
-  return std::round(i * (T)(n_col * LAYERS) + j * (T)LAYERS + k);
-#else
-  // OLD FORMAT invariato
-  return std::round(k * (T)(n_row * n_col) + j * (T)n_row + i);
-#endif
+int compute_buffer_offset(
+    const int SIZE, const int LAYERS, 
+    const T i, const T j, const T k
+) {
+    #ifndef USE_OLD_FORMAT
+        return std::round(j * (T)(SIZE * LAYERS) + i * (T)LAYERS + k); // new formula
+    #else
+        return std::round(k * (T)(SIZE*SIZE) + j * (T)SIZE + i); // old formula
+    #endif
 }
 
-int transform_coords(const int n_row, const int n_col, const int LAYERS,
-                     const int TX, const int TY, const float ANG, const int i,
-                     const int j, const int k);
+int transform_coords(const int SIZE, const int LAYERS, const int TX,const int TY,const float ANG, const int i, const int j, const int k);
 
-inline uint8_t transform_nearest_neighbour(uint8_t *volume_src, const int TX,
-                                           const int TY, const float ANG,
-                                           const int n_row, const int n_col,
-                                           const int LAYERS, const int i,
-                                           const int j, const int k) {
-  // compute source index (transform [i,j] coordinates)
-  int old_index = transform_coords(n_row, n_col, LAYERS, TX, TY, ANG, i, j, k);
+inline uint8_t transform_nearest_neighbour(
+    uint8_t *volume_src,
+    const int TX, const int TY, const float ANG,
+    const int SIZE, const int LAYERS,
+    const int i, const int j, const int k
+) {
+    // compute source index (transform [i,j] coordinates)
+    int old_index = transform_coords(SIZE, LAYERS, TX, TY, ANG, i, j, k);
 
-  // read pixel from input volume
-#ifndef TRACK_READS
-  uint8_t pixel = (old_index != -1 ? volume_src[old_index] : 0);
-#else
-  uint8_t pixel = (old_index != -1 ? track_reads(volume_src, old_index)
-                                   : 0); // count sequential reads for stats
-#endif
+    // read pixel from input volume
+    #ifndef TRACK_READS
+    uint8_t pixel = (old_index != -1 ? volume_src[old_index] : 0);
+    #else
+    uint8_t pixel = (old_index != -1 ? track_reads(volume_src, old_index) : 0); // count sequential reads for stas
+    #endif
 
-  return pixel;
+    return pixel;
 }
 
 // NOTE: assuming that k is always in bounds
-inline bool is_out_of_bounds(const int n_row, const int n_col, const int LAYERS,
-                             const float i, const float j) {
-  return (i < 0 || i >= n_row || j < 0 || j >= n_col);
+inline bool is_out_of_bounds(const int SIZE, const int LAYERS, const float i, const float j) {
+    return (i < 0 || i >= SIZE ||
+            j < 0 || j >= SIZE);
 }
 
-inline uint8_t transform_bilinear(uint8_t *volume_src, const float TX,
-                                  const float TY, const float ANG,
-                                  const int n_row, const int n_col,
-                                  const int LAYERS, const int i, const int j,
-                                  const int k) {
-  // coordinate centrate
-  const float ci = i - n_row / 2.f;
-  const float cj = j - n_col / 2.f;
+inline uint8_t transform_bilinear(
+    uint8_t *volume_src,
+    const float TX, const float TY, const float ANG,
+    const int SIZE, const int LAYERS,
+    const int i, const int j, const int k
+) {
+    // compute source position (transform [i,j] coordinates)
+    const float P_i = (i-SIZE/2.f - TX)*std::cos(ANG) - (j-SIZE/2.f - TY)*std::sin(ANG) + (SIZE/2.f);
+    const float P_j = (i-SIZE/2.f - TX)*std::sin(ANG) + (j-SIZE/2.f - TY)*std::cos(ANG) + (SIZE/2.f);
 
-  // rotazione antioraria
-  const float P_i =
-      (ci - TY) * std::cos(ANG) - (cj - TX) * std::sin(ANG) + n_row / 2.f;
-  const float P_j =
-      (ci - TY) * std::sin(ANG) + (cj - TX) * std::cos(ANG) + n_col / 2.f;
-  // posizioni dei 4 pixel intorno
-  const float P_left = std::floor(P_i);
-  const float P_right = std::ceil(P_i);
-  const float P_top = std::floor(P_j);
-  const float P_bottom = std::ceil(P_j);
+    // computing the positions of the 4 pixels surrounding the transformed coordinates
+    const float P_left = std::floor(P_i);
+    const float P_right = std::ceil(P_i);
+    const float P_top = std::floor(P_j);
+    const float P_bottom = std::ceil(P_j);
 
-  const int Q11_index =
-      (!is_out_of_bounds(n_row, n_col, LAYERS, P_left, P_top)
-           ? compute_buffer_offset<int>(n_row, n_col, LAYERS, P_left, P_top, k)
-           : -1);
-  const int Q12_index =
-      (!is_out_of_bounds(n_row, n_col, LAYERS, P_right, P_top)
-           ? compute_buffer_offset<int>(n_row, n_col, LAYERS, P_right, P_top, k)
-           : -1);
-  const int Q21_index =
-      (!is_out_of_bounds(n_row, n_col, LAYERS, P_left, P_bottom)
-           ? compute_buffer_offset<int>(n_row, n_col, LAYERS, P_left, P_bottom,
-                                        k)
-           : -1);
-  const int Q22_index =
-      (!is_out_of_bounds(n_row, n_col, LAYERS, P_right, P_bottom)
-           ? compute_buffer_offset<int>(n_row, n_col, LAYERS, P_right, P_bottom,
-                                        k)
-           : -1);
+    // compute indexes of the 4 pixels surrounding the transformed coordinates
+    const int Q11_index = (!is_out_of_bounds(SIZE, LAYERS, P_left, P_top)     ? compute_buffer_offset<int>(SIZE, LAYERS, P_left,  P_top,    k) : -1); // top-left
+    const int Q12_index = (!is_out_of_bounds(SIZE, LAYERS, P_right, P_top)    ? compute_buffer_offset<int>(SIZE, LAYERS, P_right, P_top,    k) : -1); // top-right
+    const int Q21_index = (!is_out_of_bounds(SIZE, LAYERS, P_left, P_bottom)  ? compute_buffer_offset<int>(SIZE, LAYERS, P_left,  P_bottom, k) : -1); // bottom-left
+    const int Q22_index = (!is_out_of_bounds(SIZE, LAYERS, P_right, P_bottom) ? compute_buffer_offset<int>(SIZE, LAYERS, P_right, P_bottom, k) : -1); // bottom-right
 
-  const float Q11_val = (float)read_from_cache(
-      volume_src, P_left, P_top, i, j, k, Q11_index, n_row, n_col, LAYERS, true,
-      CACHE_STRATEGY2(GribbonBailey));
-  const float Q12_val = (float)read_from_cache(
-      volume_src, P_right, P_top, i, j, k, Q12_index, n_row, n_col, LAYERS,
-      true, CACHE_STRATEGY2(GribbonBailey));
-  const float Q21_val = (float)read_from_cache(
-      volume_src, P_left, P_bottom, i, j, k, Q21_index, n_row, n_col, LAYERS,
-      true, CACHE_STRATEGY2(GribbonBailey));
-  const float Q22_val = (float)read_from_cache(
-      volume_src, P_right, P_bottom, i, j, k, Q22_index, n_row, n_col, LAYERS,
-      true, CACHE_STRATEGY2(GribbonBailey));
+    // retrieve values of the 4 pixels (top-left, top-right, bottom-left, bottom-right)
+    const float Q11_val = (float)read_from_cache(volume_src, P_left,  P_top,    i, j, k, Q11_index, SIZE, LAYERS, true, CACHE_STRATEGY(GribbonBailey));
+    const float Q12_val = (float)read_from_cache(volume_src, P_right, P_top,    i, j, k, Q12_index, SIZE, LAYERS, true, CACHE_STRATEGY(GribbonBailey));
+    const float Q21_val = (float)read_from_cache(volume_src, P_left,  P_bottom, i, j, k, Q21_index, SIZE, LAYERS, true, CACHE_STRATEGY(GribbonBailey));
+    const float Q22_val = (float)read_from_cache(volume_src, P_right, P_bottom, i, j, k, Q22_index, SIZE, LAYERS, true, CACHE_STRATEGY(GribbonBailey));
 
-  const float R_i = P_i - P_left;
-  const float R_j = P_j - P_top;
-  const float R_i_inv = 1.f - R_i;
-  const float R_j_inv = 1.f - R_j;
+    // projections of P_i and P_j on the x-axis and y-axis, in the box Q11-Q12-Q21-Q22
+    const float R_i = P_i - P_left; // fractional part of P_i
+    const float R_j = P_j - P_top;  // fractional part of P_j
+    const float R_i_inv = 1.f - R_i;
+    const float R_j_inv = 1.f - R_j;
 
-  const float val_left = Q11_val * R_i_inv + Q12_val * R_i;
-  const float val_right = Q21_val * R_i_inv + Q22_val * R_i;
-  const float pixel = std::round(val_left * R_j_inv + val_right * R_j);
+    // bilinear interpolation: REPEATED LINEAR INTERPOLATION (left/right -> top/bottom)
+    const float val_left = Q11_val * R_i_inv + Q12_val * R_i;
+    const float val_right = Q21_val * R_i_inv + Q22_val * R_i;
+    const float pixel = std::round(val_left * R_j_inv + val_right * R_j);
 
-  return pixel;
+    return pixel;
 }
 
-void transform_volume(uint8_t *volume_src, uint8_t *volume_dest, const float TX,
-                      const float TY, float ANG, const int n_row,
-                      const int n_col, const int LAYERS,
-                      const bool bilinear_interpolation) {
-  ANG = -ANG; // per convenzione, angolo positivo = rotazione
-              // antioraria
-  float n_sin = -std::sin(ANG);
-  float p_cos = std::cos(ANG);
-  float p_sin = std::sin(ANG);
-  float n_cos = -std::cos(ANG);
+void transform_volume(
+    uint8_t *volume_src,
+    uint8_t *volume_dest,
+    const float TX,
+    const float TY,
+    const float ANG,
+    const int SIZE,
+    const int LAYERS,
+    const bool bilinear_interpolation
+) {
+    float n_sin = -std::sin(ANG);
+    float p_cos = std::cos(ANG);
+    float p_sin = std::sin(ANG);
+    float n_cos = -std::cos(ANG);
 
-  float delta_row_fixed_row = p_sin;
-  float delta_col_fixed_row = p_cos;
+    float delta_row_fixed_row = p_sin;
+    float delta_col_fixed_row = p_cos;
 
-  float delta_row_fixed_col = p_cos;
-  float delta_col_fixed_col = n_sin;
+    float delta_row_fixed_col = p_cos;
+    float delta_col_fixed_col = n_sin;
 
-  float cc_first_tra = (0 - n_col / 2.f) * p_cos + (0 - n_row / 2.f) * n_sin +
-                       (n_col / 2.f) - TX - delta_col_fixed_row;
-  float rr_first_tra = (0 - n_col / 2.f) * p_sin + (0 - n_row / 2.f) * p_cos +
-                       (n_row / 2.f) - TY - delta_row_fixed_row;
+    float cc_first_tra = (0 - SIZE/2.f) * p_cos + (0 - SIZE/2.f) * n_sin + (SIZE/2.f) - TX - delta_col_fixed_row;
+    float rr_first_tra = (0 - SIZE/2.f) * p_sin + (0 - SIZE/2.f) * p_cos + (SIZE/2.f) - TY - delta_row_fixed_row;
 
-  float cc_tra = 0;
-  float rr_tra = 0;
+    float cc_tra = 0;
+    float rr_tra = 0;
 
-  // Iterazione righe (i), colonne (j), layers (k)
-  for (int i = 0; i < n_row; i++) {
-    for (int j = 0; j < n_col; j++) {
-      for (int k = 0; k < LAYERS; k++) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            for (int k = 0; k < LAYERS; k++) {
 
-        uint16_t pixel;
-        if (bilinear_interpolation)
-          pixel = transform_bilinear(volume_src, TX, TY, ANG, n_row, n_col,
-                                     LAYERS, i, j, k);
-        else
-          pixel = transform_nearest_neighbour(volume_src, TX, TY, ANG, n_row,
-                                              n_col, LAYERS, i, j, k);
+                uint16_t pixel;
+                if (bilinear_interpolation)
+                    pixel = transform_bilinear(volume_src, TX, TY, ANG, SIZE, LAYERS, i, j, k);
+                else
+                    pixel = transform_nearest_neighbour(volume_src, TX, TY, ANG, SIZE, LAYERS, i, j, k);
 
-#ifndef USE_OLD_FORMAT
-        const int dest_index = i * n_col * LAYERS + j * LAYERS + k;
-#else
-        const int dest_index = k * n_row * n_col + j * n_row + i;
-#endif
+                // compute dest index
+                #ifndef USE_OLD_FORMAT
+                const int dest_index = j*SIZE*LAYERS + i*LAYERS + k; // new formula
+                #else
+                const int dest_index = k*SIZE*SIZE + j*SIZE + i; // old formula
+                #endif
 
-        volume_dest[dest_index] = pixel;
-      }
+                // write pixel in output volume
+                volume_dest[dest_index] = pixel;
+            }
+        }
     }
-  }
 }
 
 // allows translation along x-y plane, and rotation around z-axis
-int transform_coords(const int n_row, const int n_col, const int LAYERS,
-                     const int TX, const int TY, const float ANG, const int i,
-                     const int j, const int k) {
-  // Coordinate centrate sul centro dell'immagine
-  float ci = i - n_row / 2.f;
-  float cj = j - n_col / 2.f;
+int transform_coords(const int SIZE, const int LAYERS, const int TX,const int TY,const float ANG, const int i, const int j, const int k)
+{   
+    #ifndef USE_FLOAT_INDEX
+    #ifndef USE_FLOOR
+    const int new_i = std::round((i-SIZE/2.f)*std::cos(ANG) - (j-SIZE/2.f)*std::sin(ANG) - (float)TX + (SIZE/2.f));
+    const int new_j = std::round((i-SIZE/2.f)*std::sin(ANG) + (j-SIZE/2.f)*std::cos(ANG) - (float)TY + (SIZE/2.f));
+    #else
+    const int new_i = std::floor((i-SIZE/2.f)*std::cos(ANG) - (j-SIZE/2.f)*std::sin(ANG) - (float)TX + (SIZE/2.f));
+    const int new_j = std::floor((i-SIZE/2.f)*std::sin(ANG) + (j-SIZE/2.f)*std::cos(ANG) - (float)TY + (SIZE/2.f));
+    #endif
+    const int new_k = k;
+    #else
+    const float new_i = (i-SIZE/2.f)*std::cos(ANG) - (j-SIZE/2.f)*std::sin(ANG) - (float)TX + (SIZE/2.f);
+    const float new_j = (i-SIZE/2.f)*std::sin(ANG) + (j-SIZE/2.f)*std::cos(ANG) - (float)TY + (SIZE/2.f);
+    const float new_k = k;
+    #endif
 
-  float new_i_f =
-      (ci - TY) * std::cos(ANG) - (cj - TX) * std::sin(ANG) + n_row / 2.f;
-  float new_j_f =
-      (ci - TY) * std::sin(ANG) + (cj - TX) * std::cos(ANG) + n_col / 2.f;
-
-  float new_k_f = static_cast<float>(k);
-
-  // Controllo out-of-bounds
-  if (new_i_f < 0.f || new_i_f >= n_row || new_j_f < 0.f || new_j_f >= n_col ||
-      new_k_f < 0.f || new_k_f >= LAYERS) {
-    return -1; // indice invalido
-  }
-
-#ifndef USE_FLOAT_INDEX
-  // Usa round per ottenere l'indice intero
-  int new_i = std::round(new_i_f);
-  int new_j = std::round(new_j_f);
-#else
-  int new_i = static_cast<int>(new_i_f);
-  int new_j = static_cast<int>(new_j_f);
-#endif
-
-  // Calcolo indice lineare nel buffer
-  int out_index =
-      compute_buffer_offset<int>(n_row, n_col, LAYERS, new_i, new_j, k);
-  return out_index;
+    // identify out-of-bound coordinates
+    int out_index;
+    if (new_i < 0 || new_i >= SIZE ||
+        new_j < 0 || new_j >= SIZE ||
+        new_k < 0 || new_k >= LAYERS)
+        out_index = -1;
+    else {
+        #ifndef USE_FLOAT_INDEX
+        out_index = compute_buffer_offset<float>(SIZE, LAYERS, new_i, new_j, new_k);
+        #else
+        #ifndef USE_FLOOR
+        out_index = std::round(compute_buffer_offset<int>(SIZE, LAYERS, new_i, new_j, new_k));
+        #else
+        out_index = std::floor(compute_buffer_offset<int>(SIZE, LAYERS, new_i, new_j, new_k));
+        #endif
+        #endif
+    }
+    
+    return out_index;
 }
 
-void write_slice_in_buffer(uint8_t *src, uint8_t *dest, const int slice_index,
-                           const int n_row, const int n_col, const int LAYERS) {
-  for (int i = 0; i < n_row * n_col; i++) {
-#ifndef USE_OLD_FORMAT
-    const int dest_index = i * LAYERS + slice_index; // new formula
-#else
-    const int dest_index = slice_index * n_row * n_col + i; // old formula
-#endif
-    dest[dest_index] = src[i];
-  }
+void write_slice_in_buffer(uint8_t *src, uint8_t *dest, const int slice_index, const int SIZE, const int LAYERS) {
+    for (int i = 0; i < SIZE*SIZE; i++) {
+        #ifndef USE_OLD_FORMAT
+        const int dest_index = i * LAYERS + slice_index; // new formula
+        #else
+        const int dest_index = slice_index * SIZE * SIZE + i; // old formula
+        #endif
+        dest[dest_index] = src[i];
+    }
 }
 
-void read_slice_from_buffer(uint8_t *src, uint8_t *dest, const int slice_index,
-                            const int n_row, const int n_col,
-                            const int LAYERS) {
-  for (int i = 0; i < n_row * n_col; i++) {
-#ifndef USE_OLD_FORMAT
-    const int src_index = i * LAYERS + slice_index; // new formula
-#else
-    const int src_index = slice_index * n_row * n_col + i;  // old formula
-#endif
-    dest[i] = src[src_index];
-  }
+void read_slice_from_buffer(uint8_t *src, uint8_t *dest, const int slice_index, const int SIZE, const int LAYERS) {
+    for (int i = 0; i < SIZE*SIZE; i++) {
+        #ifndef USE_OLD_FORMAT
+        const int src_index = i * LAYERS + slice_index; // new formula
+        #else
+        const int src_index = slice_index * SIZE * SIZE + i; // old formula
+        #endif
+        dest[i] = src[src_index];
+    }
 }
 
 /// Round up to next higher power of 2 (return x if it's already a power of 2).
-inline unsigned int pow2roundup(unsigned int x) {
-  if (x < 0)
-    return 0;
-  --x;
-  x |= x >> 1;
-  x |= x >> 2;
-  x |= x >> 4;
-  x |= x >> 8;
-  x |= x >> 16;
-  return x + 1;
+inline unsigned int pow2roundup(unsigned int x)
+{
+    if (x < 0)
+        return 0;
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return x+1;
 }
 
 inline uint8_t convertDepth8(uint32_t pixel, const int originalDepth) {
-  const uint32_t maxPixelValue = ((int32_t)1 << originalDepth) - 1;
-  const float normalized = pixel / (float)maxPixelValue;
-  return std::round(255.0f * normalized);
+    const uint32_t maxPixelValue = ((int32_t)1 << originalDepth) - 1;
+    const float normalized = pixel / (float)maxPixelValue;
+    return std::round(255.0f * normalized);
 }
 
-int read_volume_from_file_DICOM(uint8_t *volume, const int N_ROW,
-                                const int N_COL, const int N_COUPLES,
-                                const std::string &path) {
-#ifndef COMPILE_WITHOUT_DCMTK
-  uint8_t *imgData = new uint8_t[N_ROW * N_COL];
+int read_volume_from_file_DICOM(uint8_t *volume, const int SIZE, const int N_COUPLES, const std::string &path) {
+    #ifndef COMPILE_WITHOUT_DCMTK
+    uint8_t* imgData = new uint8_t[SIZE * SIZE];
 
-  for (int i = 0; i < N_COUPLES; i++) {
-    std::string s = path + "IM" + std::to_string(i) + ".dcm";
-    DcmFileFormat fileformat;
-    OFCondition status = fileformat.loadFile(s.c_str());
+    for (int i = 0; i < N_COUPLES; i++) {
+        std::string s = path + "IM" + std::to_string(i+1) + ".dcm";
+        DcmFileFormat fileformat;
+        OFCondition status = fileformat.loadFile(s.c_str());
 
-    if (!status.good()) {
-      std::cerr << "Error: cannot load DICOM file (" << status.text() << ")"
-                << std::endl;
-      return -1;
+        if (!status.good()) {
+            std::cerr << "Error: cannot load DICOM file (" << status.text() << ")" << std::endl;
+            return -1;
+        }
+        
+        DicomImage* dcmImage = new DicomImage(&fileformat, EXS_Unknown);
+        if (dcmImage == nullptr || !dcmImage->isMonochrome()) {
+            std::cerr << "Error: cannot read DICOM image (" << status.text() << ")" << std::endl;
+            return -1;
+        }
+
+        const int bitsPerPixel = dcmImage->getDepth();
+        const unsigned long numPixels = dcmImage->getWidth() * dcmImage->getHeight();
+        if (numPixels != SIZE*SIZE) {
+            std::cerr << "Error: size of image (" << dcmImage->getWidth() << "*" << dcmImage->getHeight() << ") different from required size (" << SIZE << "*" << SIZE << ")" << std::endl;
+            return -1;
+        }
+
+        const size_t bufferSize = numPixels * (pow2roundup(bitsPerPixel) / 8);
+
+        if (imgData == nullptr) {
+            std::cerr << "Error: cannot allocate " << bufferSize << " bytes" << std::endl;
+            perror("Error");
+            return -1;
+        }
+
+        if (dcmImage->getOutputData(imgData, bufferSize, 8, 0) == false) {
+            std::cerr << "Error: cannot read pixels (" << status.text() << ")" << std::endl;
+            return -1;
+        }
+        
+        write_slice_in_buffer((uint8_t*)imgData, volume, i, SIZE, N_COUPLES);
     }
-
-    DicomImage *dcmImage = new DicomImage(&fileformat, EXS_Unknown);
-    if (dcmImage == nullptr || !dcmImage->isMonochrome()) {
-      std::cerr << "Error: cannot read DICOM image (" << status.text() << ")"
-                << std::endl;
-      return -1;
-    }
-
-    const int bitsPerPixel = dcmImage->getDepth();
-    const unsigned long numPixels =
-        dcmImage->getWidth() * dcmImage->getHeight();
-    if (numPixels != N_ROW * N_COL) {
-      std::cerr << "Error: size of image (" << dcmImage->getWidth() << "*"
-                << dcmImage->getHeight() << ") different from required size ("
-                << N_COL << "*" << N_ROW << ")" << std::endl;
-      return -1;
-    }
-
-    const size_t bufferSize = numPixels * (pow2roundup(bitsPerPixel) / 8);
-
-    if (imgData == nullptr) {
-      std::cerr << "Error: cannot allocate " << bufferSize << " bytes"
-                << std::endl;
-      perror("Error");
-      return -1;
-    }
-
-    if (dcmImage->getOutputData(imgData, bufferSize, 8, 0) == false) {
-      std::cerr << "Error: cannot read pixels (" << status.text() << ")"
-                << std::endl;
-      return -1;
-    }
-
-    write_slice_in_buffer((uint8_t *)imgData, volume, i, N_ROW, N_COL,
-                          N_COUPLES);
-  }
-  delete[] imgData;
-  return 0;
-
-#else
-  std::cerr << "Error: DICOM support is disabled" << std::endl;
-  return -1;
-#endif
+    delete[] imgData;
+    return 0;
+    
+    #else
+    std::cerr << "Error: DICOM support is disabled" << std::endl;
+    return -1;
+    #endif
 }
 
-int load_volumes_from_data(uint8_t *input_ref,
-                           uint8_t *input_flt,
-                           uint8_t *output_flt,
-                           const std::vector<uint8_t> &ref_volume,
-                           const std::vector<uint8_t> &float_volume,
-                           int n_row, int n_col, int n_couples,
-                           int row_padding, int col_padding, int depth_padding)
-{
-    // Calcola le dimensioni con padding
-    const int padded_rows  = n_row + row_padding;
-    const int padded_cols  = n_col + col_padding;
-    const int padded_depth = n_couples + depth_padding;
 
-    // Buffer totale per sicurezza (utile per memset iniziale)
-    const size_t buffer_size =
-        static_cast<size_t>(padded_rows) * padded_cols * padded_depth;
-
-    // Controlla la dimensione dei volumi di input
-    if (ref_volume.size()   != static_cast<size_t>(n_row * n_col * n_couples) ||
-        float_volume.size() != static_cast<size_t>(n_row * n_col * n_couples))
-    {
-        std::cerr << "Error: wrong input volume size\n";
-        return -1;
-    }
-
-    // Padding simmetrico
-    const int top  = row_padding / 2;
-    const int left = col_padding / 2;
-
-    for (int k = 0; k < n_couples; ++k)
-    {
-        // Slice temporanea con padding
-        std::vector<uint8_t> padded_slice(
-            static_cast<size_t>(padded_rows) * padded_cols, 0);
-
-        // Copia la slice originale nella posizione corretta
-        for (int r = 0; r < n_row; ++r)
-        {
-            for (int c = 0; c < n_col; ++c)
-            {
-                padded_slice[(r + top) * padded_cols + (c + left)] =
-                    ref_volume[static_cast<size_t>(k) * n_row * n_col +
-                               static_cast<size_t>(r) * n_col + c];
-            }
+// NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus not include the padding.
+int read_volume_from_file_PNG(uint8_t *volume, const int SIZE, const int N_COUPLES, const int BORDER_PADDING, const int DEPTH_PADDING, const std::string &path) {
+    std::printf("Reading volume from file\n");
+    for (int i = 0; i < N_COUPLES; i++) {
+        std::string s = path + "IM" + std::to_string(i) + ".png";
+        cv::Mat image = cv::imread(s, cv::IMREAD_GRAYSCALE);
+        if (!image.data) {
+            std::cout<<"Not Found " <<s<<std::endl;
+            return -1;
         }
 
-        // Scrive la slice nel volume 3D
-        write_slice_in_buffer(padded_slice.data(), input_ref, k,
-                              padded_rows, padded_cols, padded_depth);
+        // add border-padding of 1px around the image
+        cv::copyMakeBorder(image, image, BORDER_PADDING, BORDER_PADDING, BORDER_PADDING, BORDER_PADDING, cv::BORDER_CONSTANT, 0);
+
+        // copy the slice into the buffer
+        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
+        tmp.assign(image.begin<uint8_t>(), image.end<uint8_t>());
+        write_slice_in_buffer(tmp.data(), volume, i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
     }
 
-    for (int k = 0; k < depth_padding; ++k)
-    {
-        std::vector<uint8_t> zero_slice(
-            static_cast<size_t>(padded_rows) * padded_cols, 0);
-
-        write_slice_in_buffer(zero_slice.data(), input_ref,
-                              n_couples + k,
-                              padded_rows, padded_cols, padded_depth);
-    }
-
-    for (int k = 0; k < n_couples; ++k)
-    {
-        std::vector<uint8_t> padded_slice(
-            static_cast<size_t>(padded_rows) * padded_cols, 0);
-
-        for (int r = 0; r < n_row; ++r)
-        {
-            for (int c = 0; c < n_col; ++c)
-            {
-                padded_slice[(r + top) * padded_cols + (c + left)] =
-                    float_volume[static_cast<size_t>(k) * n_row * n_col +
-                                 static_cast<size_t>(r) * n_col + c];
-            }
-        }
-
-        write_slice_in_buffer(padded_slice.data(), input_flt, k,
-                              padded_rows, padded_cols, padded_depth);
-    }
-
-    for (int k = 0; k < depth_padding; ++k)
-    {
-        std::vector<uint8_t> zero_slice(
-            static_cast<size_t>(padded_rows) * padded_cols, 0);
-
-        write_slice_in_buffer(zero_slice.data(), input_flt,
-                              n_couples + k,
-                              padded_rows, padded_cols, padded_depth);
+    for (int i = 0; i < DEPTH_PADDING; i++) {
+        // copy the slice into the buffer
+        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
+        tmp.assign(tmp.size(), 0);
+        write_slice_in_buffer(tmp.data(), volume, N_COUPLES+i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
     }
 
     return 0;
 }
 
 
-int read_volume_from_file_PNG(uint8_t *volume, const int N_ROW, const int N_COL,
-                              const int N_COUPLES, const int row_padding,
-                              const int col_padding, const int depth_padding,
-                              const std::string &path) {
-  std::printf("Reading volume from file\n");
-
-  // calcolo il padding simmetrico
-  int top = row_padding / 2;
-  int bottom = row_padding - top;
-  int left = col_padding / 2;
-  int right = col_padding - left;
-
-  int padded_rows = N_ROW + row_padding;
-  int padded_cols = N_COL + col_padding;
-  int padded_depth = N_COUPLES + depth_padding;
-
-  for (int i = 0; i < N_COUPLES; i++) {
-    std::string s = path + "IM" + std::to_string(i) + ".png";
-    cv::Mat image = cv::imread(s, cv::IMREAD_GRAYSCALE);
-    if (!image.data) {
-      std::cout << "Not Found " << s << std::endl;
-      return -1;
+// NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus not include the padding.
+void write_volume_to_file(uint8_t *volume, const int SIZE, const int N_COUPLES, const int BORDER_PADDING, const int DEPTH_PADDING, const std::string &path) {
+    std::cout<<"Writing volume to file"<<std::endl;
+    for (int i = 0; i < N_COUPLES; i++) {
+        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
+        read_slice_from_buffer(volume, tmp.data(), i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
+        cv::Mat slice = (cv::Mat(SIZE+2*BORDER_PADDING, SIZE+2*BORDER_PADDING, CV_8U, tmp.data())).clone();
+        slice = slice(cv::Rect(BORDER_PADDING, BORDER_PADDING, SIZE, SIZE)); // remove depth-padding
+        std::string s = path + "IM" + std::to_string(i+1) + ".png";
+        cv::imwrite(s, slice);
     }
-
-    // aggiungo padding simmetrico
-    cv::copyMakeBorder(image, image, top, bottom, left, right,
-                       cv::BORDER_CONSTANT, 0);
-
-    // copio la slice dentro al buffer
-    std::vector<uint8_t> tmp(padded_rows * padded_cols);
-    tmp.assign(image.begin<uint8_t>(), image.end<uint8_t>());
-    write_slice_in_buffer(tmp.data(), volume, i, padded_rows, padded_cols,
-                          padded_depth);
-  }
-
-  // depth padding (slice vuote)
-  for (int i = 0; i < depth_padding; i++) {
-    std::vector<uint8_t> tmp(padded_rows * padded_cols, 0);
-    write_slice_in_buffer(tmp.data(), volume, N_COUPLES + i, padded_rows,
-                          padded_cols, padded_depth);
-  }
-
-  return 0;
 }
-// NOTE: N_ROW, N_COL and N_COUPLES should reflect the shape of the dataset, and
-// thus not include the padding.
-int read_volume_from_file_PNG(uint8_t *volume, const int N_ROW, const int N_COL,
-                              const int N_COUPLES, const int BORDER_PADDING,
-                              const int DEPTH_PADDING,
-                              const std::string &path) {
-  std::printf("Reading volume from file\n");
-  for (int i = 0; i < N_COUPLES; i++) {
-    std::string s = path + "IM" + std::to_string(i) + ".png";
-    cv::Mat image = cv::imread(s, cv::IMREAD_GRAYSCALE);
-    if (!image.data) {
-      std::cout << "Not Found " << s << std::endl;
-      return -1;
+
+// NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus not include the padding.
+int read_volume_from_file(uint8_t *volume, const int SIZE, const int N_COUPLES, const int BORDER_PADDING, const int DEPTH_PADDING, const std::string &path, const ImageFormat imageFormat) {
+    switch (imageFormat) {
+        case ImageFormat::PNG:
+            return read_volume_from_file_PNG(volume, SIZE, N_COUPLES, BORDER_PADDING, DEPTH_PADDING, path);
+        case ImageFormat::DICOM:
+            return read_volume_from_file_DICOM(volume, SIZE, N_COUPLES, path);
     }
-
-    // add border-padding around the image
-    cv::copyMakeBorder(image, image, BORDER_PADDING, BORDER_PADDING,
-                       BORDER_PADDING, BORDER_PADDING, cv::BORDER_CONSTANT, 0);
-
-    // copy the slice into the buffer
-    std::vector<uint8_t> tmp((N_ROW + 2 * BORDER_PADDING) *
-                             (N_COL + 2 * BORDER_PADDING));
-    tmp.assign(image.begin<uint8_t>(), image.end<uint8_t>());
-    write_slice_in_buffer(tmp.data(), volume, i, N_ROW + 2 * BORDER_PADDING,
-                          N_COL + 2 * BORDER_PADDING,
-                          N_COUPLES + DEPTH_PADDING);
-  }
-
-  for (int i = 0; i < DEPTH_PADDING; i++) {
-    // copy the slice into the buffer
-    std::vector<uint8_t> tmp((N_ROW + 2 * BORDER_PADDING) *
-                             (N_COL + 2 * BORDER_PADDING));
-    tmp.assign(tmp.size(), 0);
-    write_slice_in_buffer(
-        tmp.data(), volume, N_COUPLES + i, N_ROW + 2 * BORDER_PADDING,
-        N_COL + 2 * BORDER_PADDING, N_COUPLES + DEPTH_PADDING);
-  }
-
-  return 0;
+    return -1;
 }
 
-// NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus
-// not include the padding.
-
-// NOTE: N_ROW, N_COL and N_COUPLES should reflect the shape of the dataset, and
-// thus not include the padding.
-void write_volume_to_file(uint8_t *volume, const int N_ROW, const int N_COL,
-                          const int N_COUPLES, const int BORDER_PADDING,
-                          const int DEPTH_PADDING, const std::string &path) {
-  std::cout << "Writing volume to file" << std::endl;
-  for (int i = 0; i < N_COUPLES; i++) {
-    std::vector<uint8_t> tmp((N_ROW + 2 * BORDER_PADDING) *
-                             (N_COL + 2 * BORDER_PADDING));
-    read_slice_from_buffer(volume, tmp.data(), i, N_ROW + 2 * BORDER_PADDING,
-                           N_COL + 2 * BORDER_PADDING,
-                           N_COUPLES + DEPTH_PADDING);
-    cv::Mat slice = (cv::Mat(N_ROW + 2 * BORDER_PADDING,
-                             N_COL + 2 * BORDER_PADDING, CV_8U, tmp.data()))
-                        .clone();
-    slice = slice(cv::Rect(BORDER_PADDING, BORDER_PADDING, N_COL,
-                           N_ROW)); // remove border-padding
-    std::string s = path + "IM" + std::to_string(i) + ".png";
-    cv::imwrite(s, slice);
-  }
+// this function converts an std::vector<cv::Mat> into a 3D volume buffer with the correct pattern
+int cast_mats_to_vector (uint8_t* volume, std::vector<cv::Mat> images, const int SIZE, int N_COUPLES, const int BORDER_PADDING, const int DEPTH_PADDING){
+    for(int i = 0; i < N_COUPLES; i++){
+        //cv::copyMakeBorder(images[i], images[i], BORDER_PADDING, BORDER_PADDING, BORDER_PADDING, BORDER_PADDING, cv::BORDER_CONSTANT, 0);
+        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
+        tmp.assign(images[i].begin<uint8_t>(), images[i].end<uint8_t>());
+        write_slice_in_buffer(tmp.data(), volume, i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
+    }
+    for (int i = 0; i < DEPTH_PADDING; i++) {
+        // copy the padding into the buffer
+        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
+        tmp.assign(tmp.size(), 0);
+        write_slice_in_buffer(tmp.data(), volume, N_COUPLES+i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
+        }
+    return 0;
 }
 
-void write_volume_to_file(uint8_t *volume, const int N_ROW, const int N_COL,
-                          const int N_COUPLES, const int row_padding,
-                          const int col_padding, const int DEPTH_PADDING,
-                          const std::string &path) {
-  std::cout << "Writing volume to file" << std::endl;
-
-  // calcolo la dimensione totale con padding
-  int padded_rows = N_ROW + row_padding;
-  int padded_cols = N_COL + col_padding;
-
-  // calcolo i margini simmetrici
-  int top = row_padding / 2;
-  int left = col_padding / 2;
-
-  for (int i = 0; i < N_COUPLES; i++) {
-    std::vector<uint8_t> tmp(padded_rows * padded_cols);
-    read_slice_from_buffer(volume, tmp.data(), i, padded_rows, padded_cols,
-                           N_COUPLES + DEPTH_PADDING);
-
-    cv::Mat slice_full =
-        cv::Mat(padded_rows, padded_cols, CV_8U, tmp.data()).clone();
-
-    // rimuovo il padding
-    cv::Mat slice_cropped = slice_full(cv::Rect(left, top, N_COL, N_ROW));
-
-    std::string s = path + "IM" + std::to_string(i) + ".png";
-    cv::imwrite(s, slice_cropped);
-  }
+// Currently Unused
+int vector_to_mats(uint8_t* volume, std::vector<cv::Mat> images, int SIZE, int N_COUPLES,int BORDER_PADDING,int DEPTH_PADDING)
+{
+    for (int i = 0; i < N_COUPLES; i++) {
+        std::vector<uint8_t> tmp((SIZE+2*BORDER_PADDING)*(SIZE+2*BORDER_PADDING));
+        read_slice_from_buffer(volume, tmp.data(), i, SIZE+2*BORDER_PADDING, N_COUPLES+DEPTH_PADDING);
+        cv::Mat slice = (cv::Mat(SIZE+2*BORDER_PADDING, SIZE+2*BORDER_PADDING, CV_8U, tmp.data())).clone();
+        slice = slice(cv::Rect(BORDER_PADDING, BORDER_PADDING, SIZE, SIZE)); // remove depth-padding
+        images[i] = slice;
+    }
 }
 
-// NOTE: SIZE and N_COUPLES should reflect the shape of the dataset, and thus
-// not include the padding.
-int read_volume_from_file(uint8_t *volume, const int n_row, const int n_col,
-                          const int N_COUPLES, const int row_padding,
-                          const int col_padding, const int DEPTH_PADDING,
-                          const std::string &path,
-                          const ImageFormat imageFormat) {
-  switch (imageFormat) {
-  case ImageFormat::PNG:
-    return read_volume_from_file_PNG(volume, n_row, n_col, N_COUPLES,
-                                     row_padding, col_padding, DEPTH_PADDING,
-                                     path);
-  case ImageFormat::DICOM:
-    return read_volume_from_file_DICOM(volume, n_row, n_col, N_COUPLES, path);
-  }
-  return -1;
-}
 
 uint8_t track_reads(uint8_t *mem, const int index, float *ratio) {
-  static unsigned int sequential_count = 0;
-  static unsigned int total_count = 0;
-  static unsigned int last_index = -2;
+    static unsigned int sequential_count = 0;
+    static unsigned int total_count = 0;
+    static unsigned int last_index = -2;
 
-  if (ratio == NULL) {
-    ++total_count;
-    if (index == last_index + 1) {
-      ++sequential_count;
+    if (ratio == NULL) {
+        ++total_count;
+        if (index == last_index + 1) {
+            ++sequential_count;
+        }
+        last_index = index;
+
+        #ifdef DEBUG_ACCESSED_INDEXES
+        std::cout << index << " ";
+        #endif
+
+        return mem[index];
     }
-    last_index = index;
 
-#ifdef DEBUG_ACCESSED_INDEXES
-    std::cout << index << " ";
-#endif
-
-    return mem[index];
-  }
-
-  if (total_count != 0)
-    *ratio = 100.0f * sequential_count / (float)total_count;
-  else
-    *ratio = 0.0f;
-
-  return -1;
-}
-
-int cast_mats_to_vector(uint8_t *volume, std::vector<cv::Mat> images,
-                        const int n_row, const int n_col, const int N_COUPLES,
-                        const int BORDER_PADDING, const int DEPTH_PADDING) {
-  const int padded_rows = n_row + 2 * BORDER_PADDING;
-  const int padded_cols = n_col + 2 * BORDER_PADDING;
-  const int LAYERS = N_COUPLES + DEPTH_PADDING;
-
-  for (int i = 0; i < N_COUPLES; i++) {
-    // Convert cv::Mat -> buffer
-    std::vector<uint8_t> tmp(padded_rows * padded_cols);
-    tmp.assign(images[i].begin<uint8_t>(), images[i].end<uint8_t>());
-
-    write_slice_in_buffer(tmp.data(), volume, i, padded_rows, padded_cols,
-                          LAYERS);
-  }
-
-  // Depth padding slices
-  for (int i = 0; i < DEPTH_PADDING; i++) {
-    std::vector<uint8_t> tmp(padded_rows * padded_cols, 0);
-    write_slice_in_buffer(tmp.data(), volume, N_COUPLES + i, padded_rows,
-                          padded_cols, LAYERS);
-  }
-
-  return 0;
+    if (total_count != 0)
+        *ratio = 100.0f * sequential_count / (float)total_count;
+    else
+        *ratio = 0.0f;
+    
+    return -1;
 }
