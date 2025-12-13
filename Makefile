@@ -139,6 +139,7 @@ pack_app: build_app
 	cp exec.sh build/$(NAME)/
 	cp 3DIRG_application/generate_dataset.sh build/$(NAME)/
 	cp 3DIRG_application/remove_dataset.sh build/$(NAME)/
+	cp 3DIRG_application/run_experiments.sh build/$(NAME)/
 	cp sw/dataset/duplicate_slices.sh build/$(NAME)/PET/
 	cp sw/dataset/duplicate_slices.sh build/$(NAME)/CT/
 	cp -r sw/dataset/size_512 build/$(NAME)/PET/
