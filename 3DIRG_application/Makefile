@@ -40,10 +40,10 @@ CXXFLAGS = -std=c++17 -Wno-deprecated-declarations
 CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_HLS)/include -I$(SW_DIR)/include -I$(SW_DIR)/include/image_utils
 LDFLAGS := -L$(XILINX_XRT)/lib
 LDFLAGS += $(LDFLAGS) -lxrt_coreutil
-LIBS = `pkg-config --libs opencv`
-CFLAGS = `pkg-config --cflags opencv`
+LIBS = `pkg-config --libs opencv4`
+CFLAGS = `pkg-config --cflags opencv4`
 
-OPENCVLIB=`pkg-config --cflags --libs opencv`
+OPENCVLIB=`pkg-config --cflags --libs opencv4`
 PKG_CONFIG_PATH:='/usr/local/lib64/pkgconfig/':$(PKG_CONFIG_PATH)
 LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):/usr/local/lib64
 core_code := $(wildcard $(SW_DIR)/*.hpp)

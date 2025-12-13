@@ -27,6 +27,19 @@ SOFTWARE.
 #include "../../../../../common/common.h"
 #include "../image_utils/image_utils.hpp"
 
+// saturating num of output plios to MAX_INT_PE_PLIOS
+#if INT_PE == 2 * MAX_INT_PE_PLIOS // mapping 1 plio to 2 IPEs
+#if INT_PE_SATURATED != INT_PE / 2
+#error "Only 1:2 mapping (PLIOs to IPEs) is supported, set INT_PE_SATURATED to INT_PE/2, or INT_PE <= MAX_INT_PE_PLIOS"
+#endif
+#define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
+#define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
+#elif INT_PE < 2 * MAX_INT_PE_PLIOS
+#define NUM_OUTPUT_PLIOS INT_PE / 2
+#define NUM_INPUT_PLIOS INT_PE
+#else
+#error "INT_PE > 2 * MAX_INT_PE_PLIOS not supported"
+#endif
 
 // args indexes for setup_aie kernel
 #define arg_setup_aie_in_tx 0
@@ -38,16 +51,12 @@ SOFTWARE.
 #define arg_fetcher_in_flt_original_ptr 2
 #define arg_fetcher_in_n_couples 3
 
-// args indexes for setup_interpolation kernel
-#define arg_setinterpol_in_n_couples 3 + INT_PE - 1
-
-// args indexes for writer kernel
-#define arg_writer_out_interpolated_ptr 1 + INT_PE - 1
-#define arg_writer_in_n_couples 2 + INT_PE - 1
+// args indexes for scheduler_IPE kernel
+#define arg_scheduler_IPE_in_n_couples 4
 
 // args indexes for setup_mi 
-#define arg_setup_mi_pixel_out INT_PE + 1
-#define arg_setup_mi_n_couples INT_PE + 2
+#define arg_setup_mi_pixel_out NUM_OUTPUT_PLIOS + 1
+#define arg_setup_mi_n_couples NUM_OUTPUT_PLIOS + 2
 
 // args mutual info
 #define arg_mutual_info_reference 1
@@ -94,8 +103,7 @@ public:
     xrt::kernel krnl_fetcher_B;
     xrt::kernel krnl_fetcher_C;
     xrt::kernel krnl_fetcher_D;
-    xrt::kernel krnl_setup_interpol;
-    xrt::kernel krnl_setup_interpol_2;
+    xrt::kernel krnl_scheduler_IPE;
     xrt::kernel krnl_setup_mi;
     xrt::kernel krnl_mutual_info;
 
@@ -103,7 +111,6 @@ public:
     xrtMemoryGroup bank_fetcher_B_flt_in;
     xrtMemoryGroup bank_fetcher_C_flt_in;
     xrtMemoryGroup bank_fetcher_D_flt_in;
-    xrtMemoryGroup bank_writer_flt_transformed;
     xrtMemoryGroup bank_setup_mi;
     xrtMemoryGroup bank_mutual_info;
     xrtMemoryGroup bank_mutual_info_output;
@@ -121,8 +128,7 @@ public:
     xrt::run run_fetcher_B;
     xrt::run run_fetcher_C;
     xrt::run run_fetcher_D;
-    xrt::run run_setup_interpol;
-    xrt::run run_setup_interpol_2;
+    xrt::run run_scheduler_IPE;
     xrt::run run_setup_mi;
     xrt::run run_mutual_info;
 
@@ -142,8 +148,7 @@ public:
         krnl_fetcher_B   = xrt::kernel(device, xclbin_uuid, "fetcher_B");
         krnl_fetcher_C   = xrt::kernel(device, xclbin_uuid, "fetcher_C");
         krnl_fetcher_D   = xrt::kernel(device, xclbin_uuid, "fetcher_D");
-        krnl_setup_interpol= xrt::kernel(device, xclbin_uuid, "setup_interpolator:{setup_interpolator_0}");
-        krnl_setup_interpol_2= xrt::kernel(device, xclbin_uuid, "setup_interpolator:{setup_interpolator_1}");
+        krnl_scheduler_IPE = xrt::kernel(device, xclbin_uuid, "scheduler_IPE");
         krnl_setup_mi = xrt::kernel(device, xclbin_uuid, "setup_mi");
         krnl_mutual_info = xrt::kernel(device, xclbin_uuid, "mutual_information_master");
 
@@ -152,7 +157,7 @@ public:
         bank_fetcher_B_flt_in  = krnl_fetcher_B.group_id(arg_fetcher_in_flt_original_ptr);
         bank_fetcher_C_flt_in  = krnl_fetcher_C.group_id(arg_fetcher_in_flt_original_ptr);
         bank_fetcher_D_flt_in  = krnl_fetcher_D.group_id(arg_fetcher_in_flt_original_ptr);
-        bank_setup_mi = krnl_setup_mi.group_id(arg_setup_mi_pixel_out);        
+        bank_setup_mi = krnl_setup_mi.group_id(arg_setup_mi_pixel_out);
         bank_mutual_info = krnl_mutual_info.group_id(arg_mutual_info_reference);
         bank_mutual_info_output = krnl_mutual_info.group_id(arg_mutual_info_mi);
         // bank_suppmi_coord_out = krnl_suppmi.group_id(arg_support_mi_out_coord_ptr);
@@ -174,15 +179,13 @@ public:
         run_fetcher_B = xrt::run(krnl_fetcher_B);
         run_fetcher_C = xrt::run(krnl_fetcher_C);
         run_fetcher_D = xrt::run(krnl_fetcher_D);
-        run_setup_interpol = xrt::run(krnl_setup_interpol);
-        run_setup_interpol_2 = xrt::run(krnl_setup_interpol_2);
+        run_scheduler_IPE = xrt::run(krnl_scheduler_IPE);
         run_setup_mi = xrt::run(krnl_setup_mi);
         run_mutual_info = xrt::run(krnl_mutual_info);
-        
 
         // run_suppmi = xrt::run(krnl_suppmi);
         //run_mover_T1B = xrt::run(krnl_mover_T1B);
-        //std::cout << "Run created" << std::endl;
+        std::cout << "Run created" << std::endl;
         // set setup_setminfo kernel arguments
         run_fetcher_A.set_arg(arg_fetcher_in_flt_original_ptr, buffer_fetcher_A_flt_in);
         run_fetcher_A.set_arg(arg_fetcher_in_n_couples, n_couples+padding);
@@ -193,9 +196,8 @@ public:
         run_fetcher_D.set_arg(arg_fetcher_in_flt_original_ptr, buffer_fetcher_D_flt_in);
         run_fetcher_D.set_arg(arg_fetcher_in_n_couples, n_couples+padding);
 
-        // set setup_interpol kernel arguments
-        run_setup_interpol.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
-        run_setup_interpol_2.set_arg(arg_setinterpol_in_n_couples, n_couples+padding);
+        // set scheduler_IPE kernel arguments
+        run_scheduler_IPE.set_arg(arg_scheduler_IPE_in_n_couples, n_couples + padding);
 
         // set setup mi kernel arguments
         run_setup_mi.set_arg(arg_setup_mi_pixel_out, buffer_setup_mi_flt_transformed);
@@ -209,7 +211,7 @@ public:
         
 
         // run_suppmi.set_arg(arg_support_mi_n_couples, n_couples+padding);
-        // //std::cout << " Arg Setted" << std::endl;
+        // std::cout << " Arg Setted" << std::endl;
 
         // set mover_T1B kernel arguments
         // run_mover_T1B.set_arg(arg_mover_T1B_out_buffer_AB, buffer_mover_T1B_coords_AB);
@@ -234,6 +236,7 @@ public:
             std::cerr << "Error: Could not open reference volume. Some file in path \"" << path_ref << "\" might not exist" << std::endl;
             return -1;
         }
+        return 0;
     }
 
     //
@@ -288,20 +291,18 @@ public:
         run_fetcher_B.start();
         run_fetcher_C.start();
         run_fetcher_D.start();
-        run_setup_interpol.start();
-        run_setup_interpol_2.start();
+        run_scheduler_IPE.start();
         run_setup_mi.start();
         run_mutual_info.start();
 
-        run_mutual_info.wait();
-        run_setup_mi.wait();
-        run_setup_interpol.wait();
-        run_setup_interpol_2.wait();
+        run_setup_aie.wait();
         run_fetcher_A.wait();
         run_fetcher_B.wait();
         run_fetcher_C.wait();
         run_fetcher_D.wait();
-        run_setup_aie.wait();
+        run_scheduler_IPE.wait();
+        run_setup_mi.wait();
+        run_mutual_info.wait();
         if (duration != NULL) *duration += timer_execution.getElapsedSeconds();
     }
 
@@ -309,7 +310,6 @@ public:
     // Read the transformed floating volume from the board
     //
     void read_flt_transformed(double* duration = NULL) {
-        //std::cout << "Reading the transformed floating volume" << std::endl;
         Timer timer_transfer_read_flt;
         if (duration != NULL) timer_transfer_read_flt.start();
         buffer_setup_mi_flt_transformed.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
@@ -351,7 +351,7 @@ public:
     }
 
     ~Versal3DIR() {
-        std::printf("distruttore Versal3DIR\n");
+        std::printf("destroying Versal3DIR object\n");
         delete[] input_ref;
         delete[] input_flt;
         delete[] output_flt;
