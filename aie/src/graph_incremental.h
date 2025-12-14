@@ -48,23 +48,6 @@ SOFTWARE.
 
 using namespace adf;
 
-// saturating num of output plios to MAX_INT_PE_PLIOS
-#if INT_PE == 2 * MAX_INT_PE_PLIOS // mapping 1 plio to 2 IPEs
-#if INT_PE_SATURATED != INT_PE / 2
-#error "Only 1:2 mapping (PLIOs to IPEs) is supported, set INT_PE_SATURATED to INT_PE/2, or INT_PE <= MAX_INT_PE_PLIOS"
-#endif
-#define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
-#define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
-#elif INT_PE > 1 && INT_PE < 2 * MAX_INT_PE_PLIOS
-#define NUM_OUTPUT_PLIOS INT_PE / 2
-#define NUM_INPUT_PLIOS INT_PE
-#elif INT_PE == 1
-#define NUM_OUTPUT_PLIOS INT_PE
-#define NUM_INPUT_PLIOS INT_PE
-#else
-#error "INT_PE > 2 * MAX_INT_PE_PLIOS not supported"
-#endif
-
 #define ENABLE_GRAPH_TRANSFORMATION true
 #define ENABLE_GRAPH_COEEFFICIENTS true
 #define ENABLE_GRAPH_INTERPOLATION true

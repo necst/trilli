@@ -33,7 +33,7 @@ void dispatcher(
 void data_scheduler(
     hls::stream<double_chunk_t>& in_stream_ab,
     hls::stream<double_chunk_t>& in_stream_cd,
-    hls::stream<aie_packet_t> out_to_plio[INT_PE_SATURATED],
+    hls::stream<aie_packet_t> out_to_plio[NUM_INPUT_PLIOS],
     const uint64_t num_iterations,
     int ds_id,
     int n_couples
@@ -45,7 +45,7 @@ void scheduler_IPE(
     hls::stream<fetcher_packet_t>& in_from_fetcher_c,
     hls::stream<fetcher_packet_t>& in_from_fetcher_d,
     int n_couples,
-    hls::stream<aie_packet_t> out_to_plio[INT_PE_SATURATED]
+    hls::stream<aie_packet_t> out_to_plio[NUM_INPUT_PLIOS]
 ) {
     #pragma HLS INTERFACE axis port=in_from_fetcher_a
     #pragma HLS INTERFACE axis port=in_from_fetcher_b
@@ -157,7 +157,7 @@ void dispatcher(
 void data_scheduler(
     hls::stream<double_chunk_t>& in_stream_ab,
     hls::stream<double_chunk_t>& in_stream_cd,
-    hls::stream<aie_packet_t> out_to_plio[INT_PE_SATURATED], // TODO non ha senso avere INT_PE_SATURATED, ma INT_PE_PER_DS
+    hls::stream<aie_packet_t> out_to_plio[NUM_INPUT_PLIOS], // TODO non ha senso avere INT_PE_SATURATED, ma INT_PE_PER_DS
     const uint64_t NUM_ITERATIONS,
     int ds_id, // ID del data scheduler
     int n_couples
@@ -197,7 +197,11 @@ void data_scheduler(
 
 
     #if INT_PE > 1
+    #if INT_PE_PER_DS > 1
     ap_uint<INT_PE_PER_DS_EXPO> pe_idx = 0; // Importante che il numero di bit sia corretto: il contatore si resetta da solo (richiede che le IPE siano una potenza di due)
+    #else
+    const int pe_idx = 0; // Fisso a 0 se c'è una sola IPE per DS
+    #endif
     #endif
 
     // --- main data scheduling loop ---
@@ -257,7 +261,7 @@ void data_scheduler(
             #error "INT_PE must be a power of two between 1 and 2*MAX_INT_PE_PLIOS"
         #endif
 
-        #if INT_PE > 1
+        #if INT_PE > 1 && INT_PE_PER_DS > 1
         pe_idx += 1; // round robin sulle plio
         #endif
     }

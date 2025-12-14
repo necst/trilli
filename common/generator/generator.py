@@ -351,11 +351,25 @@ const unsigned int ENTROPY_PE_CONST = ENTROPY_PE;\n \
     if interpolator_pe_number % datascheduler_pe_number != 0:
         raise ValueError("interpolator_pe_number must be multiple of datascheduler_pe_number")
 
+    saturated_interpolator_pe_number = max_intpe_plios if interpolator_pe_number > max_intpe_plios else interpolator_pe_number
+
+    print("Interpolator PE number: ", interpolator_pe_number)
+    print("Saturated Interpolator PE number: ", saturated_interpolator_pe_number)
+    if interpolator_pe_number == 1:
+        num_input_plios = interpolator_pe_number
+        num_output_plios = interpolator_pe_number
+    else:
+        num_input_plios = interpolator_pe_number
+        num_output_plios = interpolator_pe_number  // 2
+    
+    print ("Number of input PLIOS to interpolator: ", num_input_plios)
+    print ("Number of output PLIOS from interpolator: ", num_output_plios)
+
     ds_pe = datascheduler_pe_number
-    int_pe_per_ds = interpolator_pe_number // ds_pe # forse saturated?
+    int_pe_per_ds = num_input_plios // ds_pe
     int_pe_per_ds_expo = int(math.log2(int_pe_per_ds))
 
-    saturated_interpolator_pe_number = max_intpe_plios if interpolator_pe_number > max_intpe_plios else interpolator_pe_number
+    print("int_pe_per_ds: ", int_pe_per_ds, int_pe_per_ds_expo)
 
     x = -int(inp_img_dim/2)
     y = x + 32
@@ -443,6 +457,8 @@ typedef float data_t;
 #define INT_PE_SATURATED {saturated_interpolator_pe_number}
 #define INT_PE_EXPO_SATURATED {int(math.log2(saturated_interpolator_pe_number))}
 #define DIV_EXPO_SATURATED {int(math.log2(math.ceil(saturated_interpolator_pe_number * 32 / num_pixels_per_read)))}
+#define NUM_INPUT_PLIOS {num_input_plios}
+#define NUM_OUTPUT_PLIOS {num_output_plios}
 
 #define AIE_PATTERNS {aie_patterns}
 #define AIE_PATTERN_OFFSETS {aie_offsets}
