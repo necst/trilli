@@ -85,6 +85,7 @@ mac_bottom
 
     // --- sending n_couples to mergers (only if INT_PE > 64) ---
     // #if INT_PE > MAX_INT_PE_PLIOS / 2 && ID == 0
+    #if INT_PE > 1
     if (IPE_ID % 2 == 0) { // sending n_couples only to in0 of out_pixels_merger
         printf("[%d] sending n_couples=%d\n", IPE_ID, n_couples);
         writeincr(float_interpolated, (uint8)(n_couples & 0xFF));
@@ -92,7 +93,7 @@ mac_bottom
         writeincr(float_interpolated, (uint8)((n_couples >> 16) & 0xFF));
         writeincr(float_interpolated, (uint8)((n_couples >> 24) & 0xFF));
     }
-    // #endif
+    #endif
 
     // --- main interpolation loop ---
 

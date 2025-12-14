@@ -74,8 +74,11 @@ typedef ap_axis<COORD_AXIS_W> COORDS_TYPE;
 #endif
 #define NUM_OUTPUT_PLIOS MAX_INT_PE_PLIOS
 #define NUM_INPUT_PLIOS MAX_INT_PE_PLIOS
-#elif INT_PE < 2 * MAX_INT_PE_PLIOS
+#elif INT_PE > 1 && INT_PE < 2 * MAX_INT_PE_PLIOS
 #define NUM_OUTPUT_PLIOS INT_PE / 2
+#define NUM_INPUT_PLIOS INT_PE
+#elif INT_PE == 1
+#define NUM_OUTPUT_PLIOS INT_PE
 #define NUM_INPUT_PLIOS INT_PE
 #else
 #error "INT_PE > 2 * MAX_INT_PE_PLIOS not supported"
@@ -326,8 +329,6 @@ int main(int argc, char** argv) {
     mutual_information_master(out_setup_mi, (MI_PIXEL_TYPE*) input_volume, &hw_mi, n_couples + padding, padding);
     printf("Size of stream after: %d\n", out_setup_mi.size());
 
-    // empty the out_setup_mi stream
-    write_stream_to_file<MI_PIXEL_TYPE>(out_setup_mi, AIE_FOLDER("data/mi_in.txt"), PLIO_32);
 
 
     // write volume to file
@@ -352,9 +353,6 @@ int main(int argc, char** argv) {
     float sw_mi = software_mi(n_couples + padding, TX, TY, ANG, SW_FOLDER("dataset/"), nullptr);
 
     std::cout << "--- TESTBENCH SW COMPLETED ---" << std::endl;
-
-
-    std::cout << "remaining pixels: " << out_aie_interpolated[7].size() << std::endl;
     
     float error = std::abs(hw_mi - sw_mi);
     std::cout << "HW MI: " << hw_mi << std::endl;

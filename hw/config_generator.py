@@ -53,7 +53,11 @@ def main():
 
             if var_name == "AIE_TO_WRITER":
                 lines[idx] = ""
-                for i in range(1, (saturated_interpolator_pe_number//2) + 1):
+                if saturated_interpolator_pe_number == 1:
+                    actual_ipe_number = 1
+                else:
+                    actual_ipe_number = saturated_interpolator_pe_number // 2
+                for i in range(1, actual_ipe_number + 1):
                     if task == "STEP":
                         lines[idx] += "stream_connect = ai_engine_0.result_" + str(i) + ":setup_mi_0.pixels_in_" + str(i) + " # only for INT_PE>=" + str(i) + "  (automatically placed by config_generator.py)\n"
                     elif task == "TX":

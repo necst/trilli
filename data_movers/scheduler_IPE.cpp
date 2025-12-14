@@ -257,6 +257,8 @@ void data_scheduler(
             #error "INT_PE must be a power of two between 1 and 2*MAX_INT_PE_PLIOS"
         #endif
 
+        #if INT_PE > 1
         pe_idx += 1; // round robin sulle plio
+        #endif
     }
 }
