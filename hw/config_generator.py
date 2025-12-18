@@ -65,7 +65,10 @@ def main():
             elif var_name == "SINT_TO_AIE":
                 lines[idx] = ""
                 for i in range(0, saturated_interpolator_pe_number):
-                    lines[idx] += f"stream_connect = scheduler_IPE_0.out_to_plio_{i}:ai_engine_0.p_ab_{i+1} # (automatically placed by config_generator.py)\n"
+                    if saturated_interpolator_pe_number > 1:
+                        lines[idx] += f"stream_connect = scheduler_IPE_0.out_to_plio_{i}:ai_engine_0.p_ab_{i+1} # (automatically placed by config_generator.py)\n"
+                    else:
+                        lines[idx] += f"stream_connect = scheduler_IPE_0.out_to_plio:ai_engine_0.p_ab_{i+1} # (automatically placed by config_generator.py)\n"
             else:
                 print("Error: variable \"" + var_name + "\" not recognized")
                 exit(1)
