@@ -1,6 +1,6 @@
 # Soaring with TRILLI: an HW/SW Heterogeneous Accelerator for Multi-Modal Image Registration
 
-NEWS: New Trilli-Release coming out soon! Feel free to reach out for the latest results! 
+**NEWS: New Trilli-Release coming out soon! Feel free to reach out for the latest results!** 
 
 TRILLI is a novel Versal-based accelerator for **3D rigid image registration**.
 TRILLI is designed to address the computational challenges in both key components of the registration process, **geometric transformation with interpolation** and **similarity metric** computation, by optimally mapping computational steps to heterogeneous hardware components on the [Versal VCK5000](https://japan.xilinx.com/content/dam/xilinx/publications/product-briefs/amd-xilinx-vck5000-product-brief.pdf).
